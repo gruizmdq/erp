@@ -66,7 +66,7 @@
         sendNewColor(value) {
           if (value != null) {
             this.new_color_name = value
-            axios.post('/api/new_color', { name: value })
+            axios.post('/api/stock/new_color', { name: value })
             .then(response => {
               if (response.data.statusCode == 200){
                 this.alert_title = "¡Bien papá!"
@@ -89,7 +89,7 @@
         }
     },
     mounted() {
-        axios.get('/api/get_colors').then(response => {
+        axios.get('/api/stock/get_colors').then(response => {
             this.items = response.data;
             this.options = response.data
         });

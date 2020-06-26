@@ -2035,7 +2035,7 @@ __webpack_require__.r(__webpack_exports__);
     submitForm: function submitForm() {
       var _this = this;
 
-      axios.post('/api/update_items', {
+      axios.post('/api/stock/update_items', {
         items: this.detailItems.map(function (item) {
           item.stock = item.stock_to_add;
           delete item.stock_to_add;
@@ -2055,7 +2055,7 @@ __webpack_require__.r(__webpack_exports__);
         this.detailItems = [];
         return;
       } else {
-        axios.get('/api/get_detail_item', {
+        axios.get('/api/stock/get_detail_item', {
           params: {
             id_shoe: this.article.id,
             id_color: this.color.id,
@@ -2169,7 +2169,7 @@ __webpack_require__.r(__webpack_exports__);
     brand: function brand(newValue) {
       var _this = this;
 
-      axios.get("/api/get_articles/" + newValue.id, {
+      axios.get("/api/stock/get_articles/" + newValue.id, {
         params: {
           query: ""
         }
@@ -2184,7 +2184,7 @@ __webpack_require__.r(__webpack_exports__);
     getOptions: function getOptions(term) {
       var _this2 = this;
 
-      axios.get("/api/get_articles/", {
+      axios.get("/api/stock/get_articles/", {
         params: {
           query: term
         }
@@ -2202,7 +2202,7 @@ __webpack_require__.r(__webpack_exports__);
 
       if (value != null) {
         this.new_article_code = value;
-        axios.post('/api/new_article', {
+        axios.post('/api/stock/new_article', {
           id_brand: this.brand.id,
           code: value
         }).then(function (response) {
@@ -2326,7 +2326,7 @@ __webpack_require__.r(__webpack_exports__);
 
       if (value != null) {
         this.new_brand_name = value;
-        axios.post('/api/new_brand', {
+        axios.post('/api/stock/new_brand', {
           name: value
         }).then(function (response) {
           if (response.data.statusCode == 200) {
@@ -2352,7 +2352,7 @@ __webpack_require__.r(__webpack_exports__);
   mounted: function mounted() {
     var _this2 = this;
 
-    axios.get('/api/get_brands').then(function (response) {
+    axios.get('/api/stock/get_brands').then(function (response) {
       _this2.items = response.data;
       _this2.options = response.data;
     });
@@ -2441,7 +2441,7 @@ __webpack_require__.r(__webpack_exports__);
 
       if (value != null) {
         this.new_color_name = value;
-        axios.post('/api/new_color', {
+        axios.post('/api/stock/new_color', {
           name: value
         }).then(function (response) {
           if (response.data.statusCode == 200) {
@@ -2467,7 +2467,7 @@ __webpack_require__.r(__webpack_exports__);
   mounted: function mounted() {
     var _this2 = this;
 
-    axios.get('/api/get_colors').then(function (response) {
+    axios.get('/api/stock/get_colors').then(function (response) {
       _this2.items = response.data;
       _this2.options = response.data;
     });

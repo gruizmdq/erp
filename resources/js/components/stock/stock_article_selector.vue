@@ -55,7 +55,7 @@
     },
     watch: {
       brand(newValue) {
-        axios.get("/api/get_articles/"+newValue.id, {params: {query: ""}}).then(response => {
+        axios.get("/api/stock/get_articles/"+newValue.id, {params: {query: ""}}).then(response => {
             this.items = response.data;
         });
         this.selected = null
@@ -64,7 +64,7 @@
     },
     methods: {
       getOptions(term){
-         axios.get("/api/get_articles/", {params: {query: term}}).then(response => {
+         axios.get("/api/stock/get_articles/", {params: {query: term}}).then(response => {
             this.items = response.data;
         }); 
       },
@@ -76,7 +76,7 @@
       sendNewArticle(value) {
         if (value != null) {
           this.new_article_code = value
-          axios.post('/api/new_article', {id_brand: this.brand.id, code: value })
+          axios.post('/api/stock/new_article', {id_brand: this.brand.id, code: value })
           .then(response => {
             if (response.data.statusCode == 200){
               this.alert_title = "¡Bien papá!"

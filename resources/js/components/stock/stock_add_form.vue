@@ -123,7 +123,7 @@
                     this.$refs.form.reportValidity();
             },
             submitForm(){
-                axios.post('/api/update_items', {items: this.detailItems.map(
+                axios.post('/api/stock/update_items', {items: this.detailItems.map(
                                                         item => {
                                                             item.stock = item.stock_to_add
                                                             delete item.stock_to_add
@@ -142,7 +142,7 @@
                     return
                 }
                 else {
-                    axios.get('/api/get_detail_item', {params: {id_shoe: this.article.id, id_color: this.color.id, from: this.numberFrom, to: this.numberTo}})
+                    axios.get('/api/stock/get_detail_item', {params: {id_shoe: this.article.id, id_color: this.color.id, from: this.numberFrom, to: this.numberTo}})
                     .then(response => {
                         var json = response.data
                         var items = []
