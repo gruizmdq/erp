@@ -30,7 +30,7 @@ class ShoeDetailTableSeeder extends Seeder
                 $sucursal_item->save();
             }
             catch(Exception $e) {
-                echo 'a';
+                echo $e;
             }   
         }
     }

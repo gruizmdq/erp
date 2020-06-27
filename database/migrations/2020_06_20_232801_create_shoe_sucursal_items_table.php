@@ -22,7 +22,7 @@ class CreateShoeSucursalItemsTable extends Migration
 
             $table->foreign('id_shoe_detail')->references('id')->on('shoe_details');
             $table->foreign('id_sucursal')->references('id')->on('sucursals');
-            $table->primary(['id_shoe_detail', 'id_sucursal']);
+            $table->unique(['id_shoe_detail', 'id_sucursal']);
             
             $table->softDeletes();
         });

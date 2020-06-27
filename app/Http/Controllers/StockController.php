@@ -46,14 +46,18 @@ class StockController extends Controller{
     }
 
     public function get_list_stock(Request $request) {
-        $shoe_details = ShoeDetail::where('shoes.id_brand', 104)
+        Log::info(json_encode($request->getContent()));
+        $id_brand = $request->input('id_brand');
+        $shoe_details = ShoeDetail::where('shoes.id_brand', $id_brand)
                                     ->join('shoes', 'shoes.id', '=', 'shoe_details.id_shoe')
                                     ->join('shoe_colors', 'shoe_colors.id', '=', 'shoe_details.id_color')
                                     ->join('shoe_brands', 'shoes.id_brand', '=', 'shoe_brands.id')
                                     ->select('shoe_brands.name as brand_name', 'shoe_details.*', 'shoes.code as code', 'shoe_colors.name as color')
-                                    //->limit(50)
+                                    ->orderBy('code')
+                                    ->orderBy('color')
+                                    ->orderBy('number')
                                     ->get();
-        Log::info('Count: '.sizeof($shoe_details));
+        Log::info("Count for id_brand $id_brand: ".sizeof($shoe_details));
         foreach ($shoe_details as $shoe){
             $stock_sucursal_items = ShoeSucursalItem::where('id_shoe_detail', $shoe->id)
                                                     ->join('sucursals', 'shoe_sucursal_items.id_sucursal', '=', 'sucursals.id')
@@ -236,6 +240,10 @@ class StockController extends Controller{
                 Log::info(self::LOG_LABEL." Start delete proccess for $id.");
                 try {
                     $row = ShoeDetail::findOrFail($id);
+                    //Removing sucursal item.
+                    $childs = $row->shoeSucursalItem;
+                    foreach ($childs as $i)
+                        $i->delete();
                     $row->delete();
                     $success[] = $id;
                     Log::info(self::LOG_LABEL."Success. Delete success for $id.");

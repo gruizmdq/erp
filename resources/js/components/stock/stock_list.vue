@@ -1,6 +1,8 @@
 <template>
   <div>
-      <md-table v-model="searched" md-sort="name" md-sort-order="asc" md-card md-fixed-header @md-selected="onSelect">
+      <stock-brand-selector activeAddButton="false" v-on:updatebrand="updatebrand($event)"></stock-brand-selector>
+
+      <md-table v-if="id_brand" v-model="searched" md-sort="name" md-sort-order="asc" md-card md-fixed-header @md-selected="onSelect">
         <md-table-toolbar>
           <div class="md-toolbar-section-start">
             <h1 class="md-title">Artículos</h1>
@@ -15,8 +17,8 @@
           <div class="md-toolbar-section-start">{{ getAlternateLabel(count) }}</div>
 
           <div class="md-toolbar-section-end">
-            <md-button class="md-icon-button">
-              <i class="far fa-trash-alt" @click="activeConfirmDialog = true"></i>
+            <md-button class="md-icon-button" @click="activeConfirmDialog = true">
+              <i class="far fa-trash-alt"></i>
             </md-button>
           </div>
         </md-table-toolbar>
@@ -77,7 +79,8 @@
         activeConfirmDialog: false,
         alertActive: false,
         alert_title: '',
-        alert_content: ''
+        alert_content: '',
+        id_brand: null
       }
     },
     props: {
@@ -86,6 +89,11 @@
     methods: {
       onSelect (items) {
         this.selected = items
+      },
+      updatebrand(value) {
+        this.id_brand = value.id
+        if (this.id_brand != null)
+          this.getData()
       },
       getAlternateLabel (count) {
         let plural = ''
@@ -108,7 +116,7 @@
         return 0
       },
       getData(){
-        axios.get('/api/stock/get_list_stock').then(response => {
+        axios.get('/api/stock/get_list_stock', {params: { id_brand: this.id_brand }}).then(response => {
             this.items = response.data;
             this.searched = this.items
         });
@@ -121,7 +129,8 @@
                                                   item => item.id
                                                   )})
           .then(response => {
-              this.items = this.items.filter(item => !item.id.includes(response.data.items))
+              this.items = this.items.filter(item => !response.data.success.includes(item.id))
+              this.searched = this.items
               this.alert_title = response.data.status
               this.alert_content = response.data.message
               this.alertActive = true
@@ -130,7 +139,6 @@
     },
     mounted() {
         this.getSucursals()
-        this.getData()
     }
   }
 </script>

@@ -2293,6 +2293,10 @@ __webpack_require__.r(__webpack_exports__);
     };
   },
   props: {
+    activeAddButton: {
+      type: Boolean,
+      "default": true
+    },
     brand: {
       type: Object,
       "default": null
@@ -2633,6 +2637,8 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
 var toLower = function toLower(text) {
   return text.toString().toLowerCase();
 };
@@ -2661,13 +2667,18 @@ var searchByBrandName = function searchByBrandName(items, term) {
       activeConfirmDialog: false,
       alertActive: false,
       alert_title: '',
-      alert_content: ''
+      alert_content: '',
+      id_brand: null
     };
   },
   props: {},
   methods: {
     onSelect: function onSelect(items) {
       this.selected = items;
+    },
+    updatebrand: function updatebrand(value) {
+      this.id_brand = value.id;
+      if (this.id_brand != null) this.getData();
     },
     getAlternateLabel: function getAlternateLabel(count) {
       var plural = '';
@@ -2695,7 +2706,11 @@ var searchByBrandName = function searchByBrandName(items, term) {
     getData: function getData() {
       var _this2 = this;
 
-      axios.get('/api/stock/get_list_stock').then(function (response) {
+      axios.get('/api/stock/get_list_stock', {
+        params: {
+          id_brand: this.id_brand
+        }
+      }).then(function (response) {
         _this2.items = response.data;
         _this2.searched = _this2.items;
       });
@@ -2712,8 +2727,9 @@ var searchByBrandName = function searchByBrandName(items, term) {
         })
       }).then(function (response) {
         _this3.items = _this3.items.filter(function (item) {
-          return !item.id.includes(response.data.items);
+          return !response.data.success.includes(item.id);
         });
+        _this3.searched = _this3.items;
         _this3.alert_title = response.data.status;
         _this3.alert_content = response.data.message;
         _this3.alertActive = true;
@@ -2722,7 +2738,6 @@ var searchByBrandName = function searchByBrandName(items, term) {
   },
   mounted: function mounted() {
     this.getSucursals();
-    this.getData();
   }
 });
 
@@ -39074,6 +39089,7 @@ var render = function() {
         {
           ref: "form",
           staticClass: "text-center",
+          attrs: { autocomplete: "off" },
           on: { submit: _vm.submitForm }
         },
         [
@@ -39707,25 +39723,26 @@ var render = function() {
         [
           _c("label", [_vm._v("Marca")]),
           _vm._v(" "),
-          _c(
-            "div",
-            {},
-            [
-              _c(
-                "md-button",
-                {
-                  staticClass: "md-primary md-raised btn-sm",
-                  on: {
-                    click: function($event) {
-                      _vm.activePrompt = true
-                    }
-                  }
-                },
-                [_vm._v("Agregar")]
+          _vm.activeAddButton
+            ? _c(
+                "div",
+                [
+                  _c(
+                    "md-button",
+                    {
+                      staticClass: "md-primary md-raised btn-sm",
+                      on: {
+                        click: function($event) {
+                          _vm.activePrompt = true
+                        }
+                      }
+                    },
+                    [_vm._v("Agregar")]
+                  )
+                ],
+                1
               )
-            ],
-            1
-          )
+            : _vm._e()
         ]
       ),
       _vm._v(" "),
@@ -40154,177 +40171,217 @@ var render = function() {
   return _c(
     "div",
     [
-      _c(
-        "md-table",
-        {
-          attrs: {
-            "md-sort": "name",
-            "md-sort-order": "asc",
-            "md-card": "",
-            "md-fixed-header": ""
-          },
-          on: { "md-selected": _vm.onSelect },
-          scopedSlots: _vm._u([
+      _c("stock-brand-selector", {
+        attrs: { activeAddButton: false },
+        on: {
+          updatebrand: function($event) {
+            return _vm.updatebrand($event)
+          }
+        }
+      }),
+      _vm._v(" "),
+      _vm.id_brand
+        ? _c(
+            "md-table",
             {
-              key: "md-table-alternate-header",
-              fn: function(ref) {
-                var count = ref.count
-                return _c("md-table-toolbar", {}, [
+              attrs: {
+                "md-sort": "name",
+                "md-sort-order": "asc",
+                "md-card": "",
+                "md-fixed-header": ""
+              },
+              on: { "md-selected": _vm.onSelect },
+              scopedSlots: _vm._u(
+                [
+                  {
+                    key: "md-table-alternate-header",
+                    fn: function(ref) {
+                      var count = ref.count
+                      return _c("md-table-toolbar", {}, [
+                        _c("div", { staticClass: "md-toolbar-section-start" }, [
+                          _vm._v(_vm._s(_vm.getAlternateLabel(count)))
+                        ]),
+                        _vm._v(" "),
+                        _c(
+                          "div",
+                          { staticClass: "md-toolbar-section-end" },
+                          [
+                            _c(
+                              "md-button",
+                              {
+                                staticClass: "md-icon-button",
+                                on: {
+                                  click: function($event) {
+                                    _vm.activeConfirmDialog = true
+                                  }
+                                }
+                              },
+                              [_c("i", { staticClass: "far fa-trash-alt" })]
+                            )
+                          ],
+                          1
+                        )
+                      ])
+                    }
+                  },
+                  {
+                    key: "md-table-row",
+                    fn: function(ref) {
+                      var item = ref.item
+                      return _c(
+                        "md-table-row",
+                        {
+                          attrs: {
+                            "md-selectable": "multiple",
+                            "md-auto-select": ""
+                          }
+                        },
+                        [
+                          _c(
+                            "md-table-cell",
+                            {
+                              attrs: {
+                                "md-label": "Marca",
+                                "md-sort-by": "name"
+                              }
+                            },
+                            [_vm._v(_vm._s(item.brand_name))]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "md-table-cell",
+                            {
+                              attrs: {
+                                "md-label": "Code",
+                                "md-sort-by": "code"
+                              }
+                            },
+                            [_vm._v(_vm._s(item.code))]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "md-table-cell",
+                            {
+                              attrs: {
+                                "md-label": "Color",
+                                "md-sort-by": "color"
+                              }
+                            },
+                            [_vm._v(_vm._s(item.color))]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "md-table-cell",
+                            {
+                              attrs: {
+                                "md-label": "Número",
+                                "md-sort-by": "number",
+                                "md-numeric": ""
+                              }
+                            },
+                            [_vm._v(_vm._s(item.number))]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "md-table-cell",
+                            {
+                              attrs: {
+                                "md-label": "Stock",
+                                "md-sort-by": "stock",
+                                "md-numeric": ""
+                              }
+                            },
+                            [_vm._v(_vm._s(item.stock))]
+                          ),
+                          _vm._v(" "),
+                          _vm._l(_vm.sucursals, function(sucursal) {
+                            return _c(
+                              "md-table-cell",
+                              {
+                                key: sucursal.name,
+                                attrs: { "md-label": sucursal.name }
+                              },
+                              [
+                                _vm._v(
+                                  _vm._s(_vm.getStockSucursal(sucursal, item))
+                                )
+                              ]
+                            )
+                          })
+                        ],
+                        2
+                      )
+                    }
+                  }
+                ],
+                null,
+                false,
+                1512078128
+              ),
+              model: {
+                value: _vm.searched,
+                callback: function($$v) {
+                  _vm.searched = $$v
+                },
+                expression: "searched"
+              }
+            },
+            [
+              _c(
+                "md-table-toolbar",
+                [
                   _c("div", { staticClass: "md-toolbar-section-start" }, [
-                    _vm._v(_vm._s(_vm.getAlternateLabel(count)))
+                    _c("h1", { staticClass: "md-title" }, [_vm._v("Artículos")])
                   ]),
                   _vm._v(" "),
                   _c(
-                    "div",
-                    { staticClass: "md-toolbar-section-end" },
+                    "md-field",
+                    {
+                      staticClass: "md-toolbar-section-end",
+                      attrs: { "md-clearable": "" }
+                    },
                     [
-                      _c("md-button", { staticClass: "md-icon-button" }, [
-                        _c("i", {
-                          staticClass: "far fa-trash-alt",
-                          on: {
-                            click: function($event) {
-                              _vm.activeConfirmDialog = true
-                            }
-                          }
-                        })
-                      ])
+                      _c("md-input", {
+                        attrs: { placeholder: "Buscar..." },
+                        on: { input: _vm.searchOnTable },
+                        model: {
+                          value: _vm.search,
+                          callback: function($$v) {
+                            _vm.search = $$v
+                          },
+                          expression: "search"
+                        }
+                      })
                     ],
                     1
                   )
-                ])
-              }
-            },
-            {
-              key: "md-table-row",
-              fn: function(ref) {
-                var item = ref.item
-                return _c(
-                  "md-table-row",
-                  {
-                    attrs: { "md-selectable": "multiple", "md-auto-select": "" }
-                  },
-                  [
-                    _c(
-                      "md-table-cell",
-                      { attrs: { "md-label": "Marca", "md-sort-by": "name" } },
-                      [_vm._v(_vm._s(item.brand_name))]
-                    ),
-                    _vm._v(" "),
-                    _c(
-                      "md-table-cell",
-                      { attrs: { "md-label": "Code", "md-sort-by": "code" } },
-                      [_vm._v(_vm._s(item.code))]
-                    ),
-                    _vm._v(" "),
-                    _c(
-                      "md-table-cell",
-                      { attrs: { "md-label": "Color", "md-sort-by": "color" } },
-                      [_vm._v(_vm._s(item.color))]
-                    ),
-                    _vm._v(" "),
-                    _c(
-                      "md-table-cell",
-                      {
-                        attrs: {
-                          "md-label": "Número",
-                          "md-sort-by": "number",
-                          "md-numeric": ""
-                        }
-                      },
-                      [_vm._v(_vm._s(item.number))]
-                    ),
-                    _vm._v(" "),
-                    _c(
-                      "md-table-cell",
-                      {
-                        attrs: {
-                          "md-label": "Stock",
-                          "md-sort-by": "stock",
-                          "md-numeric": ""
-                        }
-                      },
-                      [_vm._v(_vm._s(item.stock))]
-                    ),
-                    _vm._v(" "),
-                    _vm._l(_vm.sucursals, function(sucursal) {
-                      return _c(
-                        "md-table-cell",
-                        {
-                          key: sucursal.name,
-                          attrs: { "md-label": sucursal.name }
-                        },
-                        [_vm._v(_vm._s(_vm.getStockSucursal(sucursal, item)))]
-                      )
-                    })
-                  ],
-                  2
-                )
-              }
-            }
-          ]),
-          model: {
-            value: _vm.searched,
-            callback: function($$v) {
-              _vm.searched = $$v
-            },
-            expression: "searched"
-          }
-        },
-        [
-          _c(
-            "md-table-toolbar",
-            [
-              _c("div", { staticClass: "md-toolbar-section-start" }, [
-                _c("h1", { staticClass: "md-title" }, [_vm._v("Artículos")])
-              ]),
+                ],
+                1
+              ),
+              _vm._v(" "),
               _vm._v(" "),
               _c(
-                "md-field",
+                "md-table-empty-state",
                 {
-                  staticClass: "md-toolbar-section-end",
-                  attrs: { "md-clearable": "" }
+                  attrs: {
+                    "md-label": "Ups, no hay coincidencia",
+                    "md-description":
+                      "No se encontraron artículos para '" +
+                      _vm.search +
+                      "'. Probá con otra palabra o crea un nuevo artículo."
+                  }
                 },
                 [
-                  _c("md-input", {
-                    attrs: { placeholder: "Buscar..." },
-                    on: { input: _vm.searchOnTable },
-                    model: {
-                      value: _vm.search,
-                      callback: function($$v) {
-                        _vm.search = $$v
-                      },
-                      expression: "search"
-                    }
-                  })
+                  _c("md-button", { staticClass: "md-primary md-raised" }, [
+                    _vm._v("Crear nuevo Artículo")
+                  ])
                 ],
                 1
               )
             ],
             1
-          ),
-          _vm._v(" "),
-          _vm._v(" "),
-          _c(
-            "md-table-empty-state",
-            {
-              attrs: {
-                "md-label": "Ups, no hay coincidencia",
-                "md-description":
-                  "No se encontraron artículos para '" +
-                  _vm.search +
-                  "'. Probá con otra palabra o crea un nuevo artículo."
-              }
-            },
-            [
-              _c("md-button", { staticClass: "md-primary md-raised" }, [
-                _vm._v("Crear nuevo Artículo")
-              ])
-            ],
-            1
           )
-        ],
-        1
-      ),
+        : _vm._e(),
       _vm._v(" "),
       _c("md-dialog-confirm", {
         attrs: {

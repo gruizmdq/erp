@@ -3,9 +3,19 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Sucursal;
+use App\ShoeDetail;
+use App\ShoeSucursalItem;
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::get('/test', function () {
+    $new = ShoeDetail::find(2);
+    //$d = $new->shoeSucursalItem()->create(['id_sucursal' => 2, 'stock' => 500]);
+    $d = $new->shoeSucursalItem;
+    return response()->json(['a' => $new, 'b' => $d]);
+
 });
 
 

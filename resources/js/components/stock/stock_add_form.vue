@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<form class="text-center" ref="form" @submit="submitForm">
+		<form autocomplete="off" class="text-center" ref="form" @submit="submitForm">
                 <div class="form-row mb-4">
                     <div class="col">
                         <stock-brand-selector :brand="brand" v-on:updatebrand="updatebrand($event)"></stock-brand-selector>
