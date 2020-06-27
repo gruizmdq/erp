@@ -11,12 +11,10 @@ class ShoeBrandsTableSeeder extends Seeder
      */
     public function run()
     {
-        $brand = new ShoeBrand();
-        $brand->name = 'Hey Dey';
-        $brand->save();
-
-        $brand = new ShoeBrand();
-        $brand->name = 'Rave';
-        $brand->save();
+        for ($i = 0; $i < 100; $i++) {
+            $new = new ShoeBrand();
+            $new->name = "Marca ".$i;
+            $new->save();
+        }
     }
 }

@@ -22,6 +22,8 @@ class CreateShoesTable extends Migration
 
             $table->foreign('id_category')->references('id')->on('shoe_categories');
             $table->foreign('id_brand')->references('id')->on('shoe_brands');
+
+            $table->softDeletes();
         });
     }
 

@@ -29,6 +29,8 @@ class CreateShoeDetailsTable extends Migration
             $table->foreign('id_shoe')->references('id')->on('shoes');
             $table->foreign('id_color')->references('id')->on('shoe_colors');
             $table->primary(['id_shoe', 'id_color', 'number']);
+
+            $table->softDeletes();
         });
     }
 

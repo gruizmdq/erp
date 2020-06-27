@@ -2,9 +2,15 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Sucursal;
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+
+Route::get('/get_sucursals', function () {
+    return response()->json(Sucursal::get());
 });
 
 /*************************/
@@ -18,8 +24,11 @@ Route::get('/stock/get_numbers', 'StockController@get_numbers');
 Route::get('/stock/get_articles', 'StockController@get_articles');
 Route::get('/stock/get_articles/{id}', 'StockController@get_articles_id');
 Route::get('/stock/get_detail_item', 'StockController@get_detail_item');
+Route::get('/stock/get_list_stock', 'StockController@get_list_stock');
+
 //POST
 Route::post('/stock/new_brand', 'StockController@new_brand');
 Route::post('/stock/new_article', 'StockController@new_article');
 Route::post('/stock/new_color', 'StockController@new_color');
 Route::post('/stock/update_items', 'StockController@update_items');
+Route::post('/stock/delete_items', 'StockController@delete_items');

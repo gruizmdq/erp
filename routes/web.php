@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/stock', 'StockController@index')->name('stock.home');
+Route::get('/stock/list', function (Request $request) {
+    return view('stock.list');
+});
 
 Auth::routes();
 

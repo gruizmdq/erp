@@ -11,23 +11,13 @@ class ShoeTableSeeder extends Seeder
      * @return void
      */
     public function run()
-    {
-        $shoe = new Shoe();
-        $shoe->id_brand = 1;
-        $shoe->code = "3412";
-        $shoe->id_category = 1;
-        $shoe->save();
-
-        $shoe = new Shoe();
-        $shoe->id_brand = 1;
-        $shoe->code = "3413";
-        $shoe->id_category = 1;
-        $shoe->save();
-
-        $shoe = new Shoe();
-        $shoe->id_brand = 1;
-        $shoe->code = "3414";
-        $shoe->id_category = 1;
-        $shoe->save();
+    {   
+        for ($i = 0; $i < 1000; $i++){
+            $shoe = new Shoe();
+            $shoe->id_brand = rand (7 , 106);
+            $shoe->code = ''.$i;
+            $shoe->id_category = 1;
+            $shoe->save();
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 use Log;
 use App\ShoeBrand;
@@ -18,6 +19,8 @@ use App\Sucursal;
 class StockController extends Controller{
 
     const LOG_LABEL = '[STOCK API]';
+    const STATUS_ERROR_TITLE = "Ups. Algo salió mal";
+    const STATUS_SUCCESS_TITLE = "¡Bien papá!";
     
     public function index(Request $request) {
         return view('stock.home');
@@ -40,6 +43,25 @@ class StockController extends Controller{
     public function get_numbers(){
         $numbers = ShoeNumber::get();
         return response()->json($numbers);
+    }
+
+    public function get_list_stock(Request $request) {
+        $shoe_details = ShoeDetail::where('shoes.id_brand', 104)
+                                    ->join('shoes', 'shoes.id', '=', 'shoe_details.id_shoe')
+                                    ->join('shoe_colors', 'shoe_colors.id', '=', 'shoe_details.id_color')
+                                    ->join('shoe_brands', 'shoes.id_brand', '=', 'shoe_brands.id')
+                                    ->select('shoe_brands.name as brand_name', 'shoe_details.*', 'shoes.code as code', 'shoe_colors.name as color')
+                                    //->limit(50)
+                                    ->get();
+        Log::info('Count: '.sizeof($shoe_details));
+        foreach ($shoe_details as $shoe){
+            $stock_sucursal_items = ShoeSucursalItem::where('id_shoe_detail', $shoe->id)
+                                                    ->join('sucursals', 'shoe_sucursal_items.id_sucursal', '=', 'sucursals.id')
+                                                    ->select('sucursals.id as id_sucursal', 'shoe_sucursal_items.stock as stock')
+                                                    ->get();
+            $shoe->items = $stock_sucursal_items;
+        }
+        return response()->json($shoe_details);
     }
 
     public function get_articles (Request $request) {
@@ -142,7 +164,7 @@ class StockController extends Controller{
     public function update_items (Request $request) {
         Log::info(self::LOG_LABEL." Request to create/update stock items received: ".$request->getContent()); 
 
-        $status = '¡Bien papá!';
+        $status = self::STATUS_SUCCESS_TITLE;
         $message = 'El stock se actualizó correctamente';
         $statusCode = 200;
 
@@ -191,12 +213,51 @@ class StockController extends Controller{
             catch (Exception $e) {
                 Log::error(self::LOG_LABEL.'ERROR. There was an error with: '.json_encode($item));
                 Log::error($e);
-                $status = "Ups. Algo salió mal";
+                $status = self::STATUS_ERROR_TITLE;
                 $message = "Hubo un error con algún número. Recargar la página y chequear si el stock se actualizó";
                 $statusCode = 501;
             }
         }
         return response()->json(["items" => $return_back_items, "status" => $status, "message" => $message, 'statusCode' => $statusCode] );
+    }
 
+    public function delete_items (Request $request) {
+        Log::info(self::LOG_LABEL." Request to delete items received: ".json_encode($request->getContent()));
+        
+        $items = $request->input('items', null);
+        $failed = [];
+        $success = [];
+        $status = self::STATUS_SUCCESS_TITLE;
+        $message = 'El stock se modificó correctamente';
+        $statusCode = 200;
+
+        if ($items != null) {
+            foreach ($items as $id) {
+                Log::info(self::LOG_LABEL." Start delete proccess for $id.");
+                try {
+                    $row = ShoeDetail::findOrFail($id);
+                    $row->delete();
+                    $success[] = $id;
+                    Log::info(self::LOG_LABEL."Success. Delete success for $id.");
+                }
+                catch (ModelNotFoundException $e) {
+                    Log::error(self::LOG_LABEL."ERROR. Item with $id not found.");
+                    $failed[] = $id;
+                }
+                catch (Exception $e) {
+                    Log::error(self::LOG_LABEL."ERROR. There was an error with id: $id");
+                    Log::error($e);
+                    $failed[] = $id;
+                }
+            }
+            if (count($failed)) {
+                $message = 'Hubo problemas con algunos artículos.';
+                $statusCode = 501;
+            }
+        }
+
+        
+        Log::info(self::LOG_LABEL."Proccess completed.". PHP_EOL ."Success: ".json_encode($success). PHP_EOL ."Failed: ".json_encode($failed));
+        return response()->json(["success" => $success, "failed" => $failed,  "status" => $status, "message" => $message, 'statusCode' => $statusCode]);
     }
 }

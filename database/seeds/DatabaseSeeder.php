@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         //$this->call(ShoeColorTableSeeder::class);
         //$this->call(ShoeNumberTableSeeder::class);
         //$this->call(ShoeCategoryTableSeeder::class);
-        $this->call(ShoeTableSeeder::class);
+        //$this->call(ShoeTableSeeder::class);
+        $this->call(ShoeDetailTableSeeder::class);
     }
 }

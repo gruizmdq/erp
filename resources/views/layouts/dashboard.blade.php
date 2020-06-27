@@ -107,21 +107,21 @@ position:absolute;
     <div class="sidebar-fixed position-fixed">
 
       <a class="logo-wrapper waves-effect">
-        <img src="https://mdbootstrap.com/img/logo/mdb-email.png" class="img-fluid" alt="">
+        <img src="https://d26lpennugtm8s.cloudfront.net/stores/001/153/537/themes/common/logo-173449377-1586998124-15d8cd7eb05257244940b11efc0f25b11586998124-320-0.jpg" class="img-fluid" alt="">
       </a>
 
       <div class="list-group list-group-flush">
-        <a href="#" class="list-group-item active waves-effect">
-          <i class="fas fa-chart-pie mr-3"></i>Dashboard
+        <a href="#" class="list-group-item waves-effect">
+          <i class="fas fa-chart-pie mr-3"></i>Home
         </a>
         <a href="#" class="list-group-item list-group-item-action waves-effect">
-          <i class="fas fa-user mr-3"></i>Profile</a>
+          <i class="fas fa-user mr-3"></i>Stock</a>
         <a href="#" class="list-group-item list-group-item-action waves-effect">
-          <i class="fas fa-table mr-3"></i>Tables</a>
+          <i class="fas fa-table mr-3"></i>Ventas</a>
         <a href="#" class="list-group-item list-group-item-action waves-effect">
-          <i class="fas fa-map mr-3"></i>Maps</a>
+          <i class="fas fa-map mr-3"></i>Vendedores</a>
         <a href="#" class="list-group-item list-group-item-action waves-effect">
-          <i class="fas fa-money-bill-alt mr-3"></i>Orders</a>
+          <i class="fas fa-money-bill-alt mr-3"></i>Estadísticas</a>
       </div>
 
     </div>
@@ -207,7 +207,7 @@ position:absolute;
   @yield('scripts')
   
   <!-- MDB core JavaScript -->
-  <script type="text/javascript" src="js/mdb.min.js"></script>
+  <script src="{{ asset('js/mdb.min.js') }}"></script>
   <!-- Initializations -->
   <script type="text/javascript">
     // Animations initialization
