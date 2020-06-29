@@ -29,7 +29,10 @@ Vue.component('stock-brand-selector', require('./components/stock/stock_brand_se
 Vue.component('stock-add-form', require('./components/stock/stock_add_form.vue').default);
 Vue.component('stock-item-row', require('./components/stock/stock_item_row.vue').default);
 Vue.component('stock-list', require('./components/stock/stock_list.vue').default);
-Vue.component('stock-list-copy', require('./components/stock/stock_list_copy.vue').default);
+Vue.component('stock-movements', require('./components/stock/stock_movements.vue').default);
+Vue.component('stock-movement-item', require('./components/stock/stock_movement_item.vue').default);
+
+Vue.component('sucursal-selector', require('./components/sucursal_selector.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to

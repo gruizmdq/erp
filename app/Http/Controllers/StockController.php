@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
+use Exception;
 use Log;
 use App\ShoeBrand;
 use App\ShoeCategory;
@@ -15,6 +16,7 @@ use App\ShoeDetail;
 use App\ShoeSucursalItem;
 use App\Shoe;
 use App\Sucursal;
+use App\StockMovement;
 
 class StockController extends Controller{
 
@@ -92,6 +94,8 @@ class StockController extends Controller{
     public function get_detail_item (Request $request){
         $id_shoe = $request->input('id_shoe');
         $id_color = $request->input('id_color');
+        $get_sucursal_items = $request->input('get_sucursal_items');
+
         $to = $request->input('to');
         $from = $request->input('from');
         $detail = ShoeDetail::where([
@@ -101,9 +105,32 @@ class StockController extends Controller{
                                 ['number', '>=', $from]])
                                 ->orderByRaw('number ASC')
                                 ->get();
+
+        if($get_sucursal_items) {
+            foreach($detail as $d)
+                $d->shoeSucursalItem;
+        }
+        
         Log::info(self::LOG_LABEL.' Returned '.$detail);
 
         return response()->json($detail);
+    }
+
+    public function get_movements(Request $request) {
+        $sucursals = Sucursal::get();
+        $movements = StockMovement::limit(50)
+                                    ->join('shoe_details', 'stock_movements.id_shoe_detail', '=', 'shoe_details.id')
+                                    ->join('shoes', 'shoe_details.id_shoe', '=', 'shoes.id')
+                                    ->join('shoe_brands', 'shoes.id_brand', '=', 'shoe_brands.id')
+                                    ->join('shoe_colors', 'shoe_details.id_color', '=', 'shoe_colors.id')
+                                    ->select('shoe_brands.name as brand_name','stock_movements.created_at', 'stock_movements.id_sucursal_from', 'stock_movements.id_sucursal_to', 'stock_movements.id', 'shoes.code as code', 'shoe_details.number as number', 'shoe_colors.name as color')
+                                    ->orderBy('stock_movements.id', 'DESC')
+                                    ->get();
+        foreach ($movements as $mov) {
+            $mov->sucursal_from_name = $sucursals[$mov->id_sucursal_from-1]->name;
+            $mov->sucursal_to_name = $sucursals[$mov->id_sucursal_to-1]->name;
+        }
+        return response()->json($movements);
     }
 
     public function new_brand (Request $request) {
@@ -173,6 +200,8 @@ class StockController extends Controller{
         $statusCode = 200;
 
         $items = $request->input('items');
+        $color = $request->input('color');
+        $brand_name = $request->input('brand_name');
         $return_back_items = [];
 
         foreach ($items as $item) {
@@ -180,42 +209,53 @@ class StockController extends Controller{
                 if ( !array_key_exists('barcode', $item) ){
                     Log::info(self::LOG_LABEL." New item to add ".json_encode($item)); 
                     Log::info(self::LOG_LABEL." Start insert to database"); 
+
                     $record  = ShoeDetail::create($item);
                     $record->barcode = str_pad(ShoeDetail::max('id'), 12, '0', STR_PAD_LEFT);
-                    $record->save();
-                    Log::info(self::LOG_LABEL." Success. Request for $record->id completed");
+                    //$record->id_shoe = $item['id_shoe'];
+                    //$record->id_color = $item['id_color'];
+                    //$record->number = $item['number'];
+
                 }
                 //UPDATE
                 else {
                     $record = ShoeDetail::find($item['id']);
                     Log::info(self::LOG_LABEL." Start update for id: $record->id ".json_encode($item));
-                    $record->stock += $item['stock'];
-                    $record->sell_price = $item['sell_price'];
-                    $record->buy_price = $item['buy_price'];
-                    $record->available_tiendanube = $item['available_tiendanube'];
-                    $record->available_marketplace = $item['available_marketplace'];
-                    $record->save();
                 }
+
+                $record->stock += $item['stock_to_add'];
+                $record->sell_price = $item['sell_price'];
+                $record->buy_price = $item['buy_price'];
+                $record->available_tiendanube = $item['available_tiendanube'];
+                $record->available_marketplace = $item['available_marketplace'];
+                $record->save();
+                
+                //TODO: Esto es para que el front vuelva a captar la info... Ver mejor opción
+                $record->stock_to_add = $item['stock_to_add'];
+                Log::info(self::LOG_LABEL." Success. Request for $record->id completed");
+                
                 $return_back_items[] = $record;
+
                 Log::info(self::LOG_LABEL." Start updating main Sucursal Stock to database"); 
                 $sucursal_item = ShoeSucursalItem::where([
                                 ['id_shoe_detail', $record->id],
                                 ['id_sucursal', 1]])
                                 ->first();
+
                 if ($sucursal_item == null) {
                     $sucursal_item = new ShoeSucursalItem();
-                    $sucursal_item->stock = $item['stock'];
+                    $sucursal_item->stock = $item['stock_to_add'];
                     $sucursal_item->id_shoe_detail = $record->id;
                     $sucursal_item->id_sucursal = 1;
                 }
                 else {
-                    $sucursal_item->stock += $item['stock'];  
+                    $sucursal_item->stock += $item['stock_to_add'];  
                 }
                 $sucursal_item->save();
-                Log::info(self::LOG_LABEL."Success. Finished update main Sucursal Stock"); 
+                Log::info(self::LOG_LABEL." Success. Finished update main Sucursal Stock");
             }
             catch (Exception $e) {
-                Log::error(self::LOG_LABEL.'ERROR. There was an error with: '.json_encode($item));
+                Log::error(self::LOG_LABEL.' ERROR. There was an error with: '.json_encode($item));
                 Log::error($e);
                 $status = self::STATUS_ERROR_TITLE;
                 $message = "Hubo un error con algún número. Recargar la página y chequear si el stock se actualizó";

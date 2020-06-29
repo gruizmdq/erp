@@ -9,7 +9,7 @@
       md-layout="box"
       >
       <label>Artículo</label>
-      <div class="">
+      <div v-if="activeAddButton">
           <md-button class="md-primary md-raised btn-sm" v-if="brand != null" @click="activePrompt = true">Agregar</md-button>
       </div>
       <template slot="md-autocomplete-item" slot-scope="{ item }">{{ item.code }}</template>
@@ -48,6 +48,10 @@
       }
     },
     props: {
+      activeAddButton: {
+        type: Boolean,
+        default: true
+      },
       brand: {
         type: Object,
         default: undefined

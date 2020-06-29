@@ -15,12 +15,10 @@
 
                 <div class="form-row mb-4">
                     <div class="col-2">
-                        <!-- First name -->
-                        <input type="number" id="defaultRegisterFormFirstName" class="form-control"  v-model="numberFrom" placeholder="Desde" min='1' @change="getDetailItems">
+                        <input type="number" class="z-depth-1 form-control" v-model="numberFrom" placeholder="Desde" min='1' @change="getDetailItems">
                     </div>
                     <div class="col-2">
-                        <!-- Last name -->
-                        <input type="number" id="defaultRegisterFormLastName" class="form-control" v-model="numberTo" placeholder="Hasta" min='1' @change="getDetailItems">
+                        <input type="number" class="z-depth-1 form-control" v-model="numberTo" placeholder="Hasta" min='1' @change="getDetailItems">
                     </div>
                 </div>
 
@@ -72,10 +70,13 @@
                 md-cancel-text="Cancelar"
                 @md-confirm="confirmSubmit" />
 
-                <md-dialog-alert
+                <md-dialog-confirm
                 :md-active.sync="alertActive"
                 :md-title="alert_title"
-                :md-content="alert_content" />
+                :md-content="alert_content"
+                md-confirm-text="Imprimir Etiquetas"
+                md-cancel-text="Cancelar"
+                @md-confirm="confirmGenerateLabels" />
 	</div>
 </template>
 <script>
@@ -96,7 +97,7 @@
                 activeConfirmDialog: false,
                 alertActive: false,
                 alert_title: '',
-                alert_content: ''
+                alert_content: '',
 			}
         },
 		methods: {
@@ -122,13 +123,17 @@
                 else
                     this.$refs.form.reportValidity();
             },
+            confirmGenerateLabels() {
+                axios.post('/api/pdf/generate', {   items: this.detailItems.filter(item => item.stock_to_add > 0),
+                                                    color: this.color.name,
+                                                    brand_name: this.brand.name,
+                                                    code: this.article.code })
+                .then(response => {
+                    console.log('cope')
+                });
+            },
             submitForm(){
-                axios.post('/api/stock/update_items', {items: this.detailItems.map(
-                                                        item => {
-                                                            item.stock = item.stock_to_add
-                                                            delete item.stock_to_add
-                                                            return item
-                                                        })})
+                axios.post('/api/stock/update_items', { items: this.detailItems })
                 .then(response => {
                     this.detailItems = response.data.items
                     this.alert_title = response.data.status

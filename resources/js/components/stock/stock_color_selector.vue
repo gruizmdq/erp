@@ -9,7 +9,7 @@
       md-layout="box"
       >
       <label>Color</label>
-      <div class="">
+      <div v-if="activeAddButton">
           <md-button class="md-primary md-raised btn-sm" @click="activePrompt = true">Agregar</md-button>
       </div>
       <template slot="md-autocomplete-item" slot-scope="{ item }">{{ item.name }}</template>
@@ -47,6 +47,12 @@
         alert_title: '',
         alert_content: ''
       }
+    },
+    props: {
+      activeAddButton: {
+        type: Boolean,
+        default: true
+      },
     },
     methods: {
         getOptions (searchTerm) {

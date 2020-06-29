@@ -14,7 +14,12 @@ use Illuminate\Support\Facades\Http;
 |
 */
 
+Route::get('/pdf', 'PdfController@getIndex');
+
 Route::get('/stock', 'StockController@index')->name('stock.home');
+Route::get('/stock/movements', function (Request $request) {
+    return view('stock.movements');
+});
 Route::get('/stock/list', function (Request $request) {
     return view('stock.list');
 });

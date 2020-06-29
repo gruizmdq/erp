@@ -10,14 +10,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/test', function () {
-    $new = ShoeDetail::find(2);
-    //$d = $new->shoeSucursalItem()->create(['id_sucursal' => 2, 'stock' => 500]);
-    $d = $new->shoeSucursalItem;
-    return response()->json(['a' => $new, 'b' => $d]);
 
-});
-
+Route::post('/pdf/generate','PdfController@generatePdf');
 
 Route::get('/get_sucursals', function () {
     return response()->json(Sucursal::get());
@@ -35,6 +29,7 @@ Route::get('/stock/get_articles', 'StockController@get_articles');
 Route::get('/stock/get_articles/{id}', 'StockController@get_articles_id');
 Route::get('/stock/get_detail_item', 'StockController@get_detail_item');
 Route::get('/stock/get_list_stock', 'StockController@get_list_stock');
+Route::get('/stock/get_movements', 'StockController@get_movements');
 
 //POST
 Route::post('/stock/new_brand', 'StockController@new_brand');
