@@ -1,21 +1,17 @@
 <template>
   <tr>
+    <td scope="row">{{ item.brand_name }}</td>
+    <td scope="row">{{ item.code }}</td>
+    <td scope="row">{{ item.color }}</td>
     <td scope="row">{{ item.number }}</td>
-    <td v-for="s in sucursals" :key="s" scope="col">{{ getStock(s) }}</td>
-    <td scope="col"><sucursal-selector :options="sucursals"></sucursal-selector></td>
-    <td scope="col"><sucursal-selector :options="sucursals"></sucursal-selector></td>
-    <td scope="col"><input v-model.number="qty" type="number" min="0" step="1" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
+    <td v-for="s in sucursals" :key="s.id + Math.random()" scope="col">{{ getStock(s) }}</td>
+    <td scope="col">{{ item.qty }}</td>
   </tr>
 </template>
 
 <script>
   export default {
     name: 'StockMovementItem',
-    data() {
-      return {
-        qty: null
-      }
-    },
     props: {
         item: {
             type: Object,

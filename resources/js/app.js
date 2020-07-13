@@ -23,6 +23,7 @@ window.Vue = require('vue')
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
 
 Vue.use(VueMaterial)
+
 Vue.component('stock-article-selector', require('./components/stock/stock_article_selector.vue').default);
 Vue.component('stock-color-selector', require('./components/stock/stock_color_selector.vue').default);
 Vue.component('stock-brand-selector', require('./components/stock/stock_brand_selector.vue').default);
@@ -32,7 +33,13 @@ Vue.component('stock-list', require('./components/stock/stock_list.vue').default
 Vue.component('stock-movements', require('./components/stock/stock_movements.vue').default);
 Vue.component('stock-movement-item', require('./components/stock/stock_movement_item.vue').default);
 
-Vue.component('sucursal-selector', require('./components/sucursal_selector.vue').default);
+// Utils
+Vue.component('sucursal-selector', require('./components/utils/sucursal_selector.vue').default);
+Vue.component('user-selector', require('./components/utils/user_selector.vue').default);
+
+Vue.component('new-order-form', require('./components/order/new_order_form.vue').default);
+Vue.component('new-order-row', require('./components/order/new_order_row.vue').default);
+Vue.component('payment-method-selector', require('./components/order/payment_method_selector.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to

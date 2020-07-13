@@ -1,6 +1,9 @@
 @extends('layouts.dashboard')
 
 @section('content')
+<passport-clients></passport-clients>
+<passport-authorized-clients></passport-authorized-clients>
+<passport-personal-access-tokens></passport-personal-access-tokens>
 <div class="container-fluid mt-5">
 
       <div class="card mb-4 wow fadeIn">

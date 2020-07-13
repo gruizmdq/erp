@@ -54,38 +54,58 @@
     <form class="wow fadeIn" action="">
       <div class="form-row mb-4">
         <div class="col">
-            <stock-brand-selector :activeAddButton="false" :brand="brand" v-on:updatebrand="updatebrand($event)"></stock-brand-selector>
+            <input type="text" class="z-depth-1 form-control"  v-model="barcode" placeholder="Código de barras" @change="getDetailItem">
         </div>
         <div class="col">
-            <stock-article-selector :activeAddButton="false" :brand="brand" v-on:updatearticle="updatearticle($event)"></stock-article-selector>
+            <sucursal-selector label="Desde" :options="sucursals"></sucursal-selector>
         </div>
         <div class="col">
-            <stock-color-selector :activeAddButton="false" v-if="brand && article" v-on:updatecolor="updatecolor($event)"></stock-color-selector>
+            <sucursal-selector label="Hasta" :options="sucursals"></sucursal-selector>
         </div>
       </div>
 
-      <div class="form-row mb-4">
-        <div class="col-2">
-            <input type="number" class="z-depth-1 form-control"  v-model="numberFrom" placeholder="Desde" min='1' @change="getDetailItems">
-        </div>
-        <div class="col-2">
-            <input type="number" class="z-depth-1 form-control" v-model="numberTo" placeholder="Hasta" min='1' @change="getDetailItems">
-        </div>
-      </div>
-      <table class="table z-depth-1 w-100 white" v-if="color && brand && article && detailItems">
+      <table class="table z-depth-1 w-100 white" v-if="detailItems.length > 0">
         <thead>
             <tr>
+              <th scope="col">Marca</th>
+              <th scope="col">Artículo</th>
+              <th scope="col">Color</th>
               <th scope="col">Número</th>
-              <th v-for="s in sucursals" :key="s" scope="col">Stock {{ s.name }}</th>
-              <th scope="col">Desde</th>
-              <th scope="col">Hasta</th>
+              <th v-for="s in sucursals" :key="s+Math.random()" scope="col">Stock {{ s.name }}</th>
               <th scope="col">Cantidad</th>
             </tr>
         </thead>
         <tbody>
-            <stock-movement-item v-for="i in detailItems" :key="i" :item.sync="i" :sucursals="sucursals"> </stock-movement-item>
+            <stock-movement-item v-for="i in detailItems" :key="i.id + Math.random()" :item.sync="i" :sucursals="sucursals"> </stock-movement-item>
         </tbody>
       </table>
+
+      <div v-if="detailItems.length > 0" class="md-toolbar-section-end">
+          <button type="button" class="btn btn-primary" @click="activeConfirmDialog = true">
+            Confirmar
+          </button>
+      </div>
+
+      <md-dialog-confirm
+      :md-active.sync="activeConfirmDialog"
+      md-title="¿Seguro querés confirmar movimientos de stock?"
+      md-confirm-text="Dale mecha"
+      md-cancel-text="Cancelar"
+      @md-confirm="confirmSubmit" />
+
+      <md-dialog-alert
+      :md-active.sync="alertActive"
+      :md-title="alert_title"
+      :md-content="alert_content" />
+
+      <md-dialog-confirm
+      :md-active.sync="alertActivePrint"
+      :md-title="alert_title"
+      :md-content="alert_content"
+      md-confirm-text="Imprimir"
+      md-cancel-text="Cancelar"
+      @md-confirm="confirmPrintMovements" />
+
     </form>
   </div>
 </template>
@@ -109,59 +129,51 @@
         searched: [],
         search: null,
         activeConfirmDialog: false,
+        alertActivePrint: false,
         alertActive: false,
         alert_title: '',
         alert_content: '',
 
-        brand: null,
-        article: null, 
-        color: null, 
-        numberFrom: null,
-        numberTo: null,
+        barcode: null,
         detailItems: [],
-        sucursals: []
+        sucursals: [],
+
       }
     },
     props: {
         
     },
     methods: {
-      updatebrand: function(brand){
-          this.brand = brand
-          this.article = null
-          this.detailItems = []
-      },
-      updatearticle: function(article){
-          if (this.brand == null) {
-              this.brand = { id: article.id_brand, name: article.brand_name }}
-          this.article = article
-          this.detailItems = []
-
-      }, 
-      updatecolor: function(color) {
-          this.color = color
-          this.detailItems = []
-      },
       onSelect (items) {
         this.selected = items
       },
-      getDetailItems() {
-        if (this.range(this.numberFrom, this.numberTo) < 0) {
-            this.detailItems = []
-            return
-        }
-        else {
-            axios.get('/api/stock/get_detail_item', {params: {id_shoe: this.article.id, id_color: this.color.id, from: this.numberFrom, to: this.numberTo, get_sucursal_items: true}})
+      getDetailItem() {
+        if (this.barcode != null) {
+            axios.get('/api/stock/get_detail_item_barcode', {params: { barcode: this.barcode }})
             .then(response => {
-                this.detailItems = response.data
-                console.log(response.data)
+              let data = response.data
+              this.barcode = null
+              if (data.item.length === 0) {
+                this.alertActive = true;
+                this.alert_title =  data.title
+                this.alert_content = data.message
+                return
+              }
+              // check if article already have one movement
+              var index = 0;
+              this.detailItems.forEach(i => {
+                if (i.id === data.item.id){
+                  i.qty += 1
+                  return
+                }    
+                index++;
+              });
+              if (index === this.detailItems.length) {
+                data.item.qty = 1
+                this.detailItems.unshift(data.item)
+              }
             });
         }
-      },
-      range(from, to) {
-          if (from == null || to == null)
-              return -1
-          return parseInt(to) +1 - parseInt(from)
       },
       getDateFormat(date) {
         date = new Date(date)
@@ -190,8 +202,26 @@
             this.sucursals = response.data;
         });
       },
+      confirmSubmit() {
+        axios.post('/api/stock/add_movements', {items: this.detailItems.map(item => {
+                                                        return {
+                                                          id: item.id, 
+                                                          qty: item.qty,
+                                                        }
+                                                      }),
+                                                from: sucursalFrom, 
+                                                to: sucursalTo })
+        .then(response => {
+          this.alert_title = response.data.status
+          this.alert_content = response.data.message
+          this.alertPrintActive = true
+        })
+      },
+      confirmPrintMovements () {
+        console.log('jeje')
+      }
     },
-    mounted() {
+    created() {
         this.getData();
         this.getSucursals();
     }

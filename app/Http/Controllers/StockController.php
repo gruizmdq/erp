@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 use Exception;
 use Log;
@@ -25,29 +26,37 @@ class StockController extends Controller{
     const STATUS_SUCCESS_TITLE = "¡Bien papá!";
     
     public function index(Request $request) {
+        $request->user()->authorizeRoles(['admin']);
         return view('stock.home');
     }
+
     public function get_brands (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
         $brands = ShoeBrand::get();
         return response()->json($brands);
     }
 
     public function get_colors () {
+        $request->user()->authorizeRoles(['admin']);
         $colors = ShoeColor::get();
         return response()->json($colors);
     }
 
     public function get_categories () {
+        $request->user()->authorizeRoles(['admin']);
         $categories = ShoeCategory::get();
         return response()->json($categories);
     }
 
     public function get_numbers(){
+        $request->user()->authorizeRoles(['admin']);
         $numbers = ShoeNumber::get();
         return response()->json($numbers);
     }
 
     public function get_list_stock(Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
         Log::info(json_encode($request->getContent()));
         $id_brand = $request->input('id_brand');
         $shoe_details = ShoeDetail::where('shoes.id_brand', $id_brand)
@@ -71,6 +80,8 @@ class StockController extends Controller{
     }
 
     public function get_articles (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
         $query = $request->input('query');
         $articles = Shoe::where('code','like','%'.$query.'%')
                         ->join('shoe_brands', 'shoes.id_brand', '=', 'shoe_brands.id')
@@ -80,6 +91,8 @@ class StockController extends Controller{
     }
 
     public function get_articles_id (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
         $id = Route::current()->parameter('id');
         $query = $request->input('query');
         $articles = Shoe::where([
@@ -92,6 +105,8 @@ class StockController extends Controller{
     }
 
     public function get_detail_item (Request $request){
+        $request->user()->authorizeRoles(['admin']);
+
         $id_shoe = $request->input('id_shoe');
         $id_color = $request->input('id_color');
         $get_sucursal_items = $request->input('get_sucursal_items');
@@ -116,7 +131,35 @@ class StockController extends Controller{
         return response()->json($detail);
     }
 
+    public function get_detail_item_barcode (Request $request){
+        $request->user()->authorizeRoles(['admin']);
+
+        $barcode = $request->input('barcode');
+        $detail = [];
+        try {
+            $detail = ShoeDetail::where('barcode', $barcode)->firstOrFail();
+            $detail->shoeSucursalItem;
+            $shoe = Shoe::find($detail->id_shoe);
+            $detail->code = $shoe->code;
+            $detail->brand_name = ShoeBrand::where('id', $shoe->id_brand)->value('name');
+            $detail->color = ShoeColor::where('id', $detail->id_color)->value('name');
+            return response()->json(["item" => $detail, "title" => self::STATUS_SUCCESS_TITLE, "status" => 'success', "statusCode" => 200]);
+
+
+        }
+        catch (ModelNotFoundException $e) {
+            return response()->json(["item" => $detail, "title" => self::STATUS_ERROR_TITLE, "status" => 'error', "statusCode" => 501, "message" => 'No se encontró el artículo en la base de datos']);
+        }
+        catch (Exception $e) {
+            return response()->json(["item" => $detail, "title" => self::STATUS_ERROR_TITLE, "status" => 'error', "statusCode" => 501, "message" => 'Hubo un error. Chupala.']);
+
+
+        }
+    }
+
     public function get_movements(Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
         $sucursals = Sucursal::get();
         $movements = StockMovement::limit(50)
                                     ->join('shoe_details', 'stock_movements.id_shoe_detail', '=', 'shoe_details.id')
@@ -134,6 +177,9 @@ class StockController extends Controller{
     }
 
     public function new_brand (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
         Log::info(self::LOG_LABEL." New request to create brand received: ".$request->getContent()); 
         $name = $request->input('name');
         try{
@@ -153,6 +199,9 @@ class StockController extends Controller{
     }
 
     public function new_article (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
         Log::info(self::LOG_LABEL." New request to create article received: ".$request->getContent()); 
         $code = $request->input('code');
         $id_brand = $request->input('id_brand');
@@ -174,6 +223,9 @@ class StockController extends Controller{
     }
 
     public function new_color (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
         Log::info(self::LOG_LABEL." New request to create color received: ".$request->getContent()); 
         $name = $request->input('name');
         try{
@@ -193,6 +245,9 @@ class StockController extends Controller{
     }
 
     public function update_items (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
         Log::info(self::LOG_LABEL." Request to create/update stock items received: ".$request->getContent()); 
 
         $status = self::STATUS_SUCCESS_TITLE;
@@ -266,6 +321,9 @@ class StockController extends Controller{
     }
 
     public function delete_items (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
         Log::info(self::LOG_LABEL." Request to delete items received: ".json_encode($request->getContent()));
         
         $items = $request->input('items', null);
@@ -307,5 +365,90 @@ class StockController extends Controller{
         
         Log::info(self::LOG_LABEL."Proccess completed.". PHP_EOL ."Success: ".json_encode($success). PHP_EOL ."Failed: ".json_encode($failed));
         return response()->json(["success" => $success, "failed" => $failed,  "status" => $status, "message" => $message, 'statusCode' => $statusCode]);
+    }
+
+    public function add_movements(Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+        
+        Log::info("*****************************************");
+        Log::info(self::LOG_LABEL." Request to add movements received: ".$request->getContent());
+
+        $items = $request->input('items');
+        $from = $request->input('sucursalFrom');
+        $to = $request->input('sucursalTo');
+        $failed = [];
+
+        foreach($items as $i) {
+
+            try {
+
+                DB::beginTransaction();
+
+                $detail = ShoeDetail::findOrfail($i['id']);
+                $sucursal_items = $detail->shoeSucursalItem;
+                Log::info(self::LOG_LABEL." Start updating shoe_detail: $detail->id");
+                
+                for ($index = 0; $index < count($sucursal_items); $index++) {
+                    if ($sucursal_items[$index]->id_sucursal == $from) {
+                        if($sucursal_items[$index]->stock < $i['qty'])
+                            //TODO OWN EXCEPTION
+                            throw new Exception("There is not possible to move {$i['qty']}  items. The sucursal has less than {$i['qty']}.");
+                        $sucursal_items[$index]->stock -= $i['qty'];
+                        $sucursal_items[$index]->save();
+                        Log::info(self::LOG_LABEL." Updated sucursal item (FROM) {$sucursal_items[$index]->id_sucursal} for shoe_detail: $detail->id");
+                        break;
+                    }
+                }
+
+                // No encontro sucursal from
+                if ($index == count($sucursal_items)){
+                    Log::error(self::LOG_LABEL." There was an error with shoe detail {$i['id']}. It's seems there is not stock at the sucursal.");
+                    throw new Exception();
+                }
+                
+                // Search and get if exists
+                for ($index = 0; $index < count($sucursal_items); $index++) {
+                    if ($sucursal_items[$index]->id_sucursal == $to) {
+                        $sucursal_items[$index]->stock += $i['qty'];
+                        $sucursal_items[$index]->save();
+                        Log::info(self::LOG_LABEL." Updated sucursal item (TO) {$sucursal_items[$index]->id_sucursal} for shoe_detail: $detail->id");
+                        break;
+                    }
+                }
+                // NEW 
+                if ($index == count($sucursal_items)) {
+                    $new = new ShoeSucursalItem();
+                    $new->id_shoe_detail = $detail->id;
+                    $new->id_sucursal = $to;
+                    $new->stock = $i['qty'];
+                    $new->save();
+                    Log::info(self::LOG_LABEL." Created new sucursal item (TO) {$sucursal_items[$index]->id_sucursal} for shoe_detail: $detail->id");
+                }
+
+                //INSER MOVEMENT 
+                $mov = new StockMovement();
+                $mov->id_sucursal_from = $from;
+                $mov->id_sucursal_to = $to;
+                $mov->qty = $i['qty'];
+                $mov->id_shoe_detail = $i['id'];
+                $mov->save();
+            }
+            catch (ModelNotFoundException $e) {
+                Log::error(self::LOG_LABEL." ERROR. ShoeDetail item with id {$i['id']} not found.");
+                $failed[] = $i['id'];
+                DB::rollBack();
+            }
+            catch (Exception $e) {
+                Log::error(self::LOG_LABEL." ERROR. There was an error with {$i['id']}. ".$e);
+                $failed[] = $i['id'];
+                DB::rollBack();
+            }
+
+            Log::info(self::LOG_LABEL." Success. Updated stock for shoe_detail: {$i['id']}");
+            $success[] = '';
+
+            DB::commit();
+        }
+
     }
 }
