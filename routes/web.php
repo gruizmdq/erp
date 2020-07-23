@@ -40,4 +40,13 @@ Route::get('/stock/movements', function (Request $request) {
 Route::get('/stock/list', function (Request $request) {
     return view('stock.list');
 })->middleware('auth');
+Route::get('/stock/brands', function (Request $request) {
+    return view('stock.brands');
+})->middleware('auth');
+Route::get('/stock/colors', function (Request $request) {
+    return view('stock.colors');
+})->middleware('auth');
+Route::get('/stock/articles', function (Request $request) {
+    return view('stock.articles');
+})->middleware('auth');
 

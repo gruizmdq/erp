@@ -36,19 +36,19 @@ class StockController extends Controller{
         return response()->json($brands);
     }
 
-    public function get_colors () {
+    public function get_colors (Request $request) {
         $request->user()->authorizeRoles(['admin']);
         $colors = ShoeColor::get();
         return response()->json($colors);
     }
 
-    public function get_categories () {
+    public function get_categories (Request $request) {
         $request->user()->authorizeRoles(['admin']);
         $categories = ShoeCategory::get();
         return response()->json($categories);
     }
 
-    public function get_numbers(){
+    public function get_numbers(Request $request){
         $request->user()->authorizeRoles(['admin']);
         $numbers = ShoeNumber::get();
         return response()->json($numbers);
@@ -134,10 +134,10 @@ class StockController extends Controller{
     public function get_detail_item_barcode (Request $request){
         $request->user()->authorizeRoles(['admin']);
 
-        $barcode = $request->input('barcode');
+        $barcode = (int)($request->input('barcode'));
         $detail = [];
         try {
-            $detail = ShoeDetail::where('barcode', $barcode)->firstOrFail();
+            $detail = ShoeDetail::findOrFail($barcode);
             $detail->shoeSucursalItem;
             $shoe = Shoe::find($detail->id_shoe);
             $detail->code = $shoe->code;
@@ -361,10 +361,86 @@ class StockController extends Controller{
                 $statusCode = 501;
             }
         }
-
         
         Log::info(self::LOG_LABEL."Proccess completed.". PHP_EOL ."Success: ".json_encode($success). PHP_EOL ."Failed: ".json_encode($failed));
         return response()->json(["success" => $success, "failed" => $failed,  "status" => $status, "message" => $message, 'statusCode' => $statusCode]);
+    }
+
+    public function delete_colors (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
+        Log::info(self::LOG_LABEL." Request to delete colors received: ".json_encode($request->getContent()));
+        
+        $items = $request->input('items', null);
+        $failed = [];
+        $success = [];
+        $status = self::STATUS_SUCCESS_TITLE;
+        $message = 'El stock se modificó correctamente';
+        $statusCode = 200;
+
+        if ($items != null) {
+            foreach ($items as $id) {
+                Log::info(self::LOG_LABEL." Start delete proccess for $id.");
+                try {
+                    $row = ShoeColor::findOrFail($id);
+                    $row->delete();
+                    $success[] = $id;
+                    Log::info(self::LOG_LABEL."Success. Delete success for $id.");
+                }
+                catch (ModelNotFoundException $e) {
+                    Log::error(self::LOG_LABEL."ERROR. Item with $id not found.");
+                    $failed[] = $id;
+                }
+                catch (Exception $e) {
+                    Log::error(self::LOG_LABEL."ERROR. There was an error with id: $id");
+                    Log::error($e);
+                    $failed[] = $id;
+                }
+            }
+            if (count($failed)) {
+                $message = 'Hubo problemas con algunos artículos.';
+                $statusCode = 501;
+            }
+        }
+
+        Log::info(self::LOG_LABEL."Proccess completed.". PHP_EOL ."Success: ".json_encode($success). PHP_EOL ."Failed: ".json_encode($failed));
+        return response()->json(["success" => $success, "failed" => $failed,  "status" => $status, "message" => $message, 'statusCode' => $statusCode]);
+    }
+
+    public function edit_color (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
+        Log::info(self::LOG_LABEL." Request to delete colors received: ".json_encode($request->getContent()));
+        
+        $item = $request->input('item', null);
+        $statusCode = 200;
+        $status = self::STATUS_SUCCESS_TITLE;
+        $message = "¡El color se editó correctamente!";
+
+        if ($item != null) {
+            try {
+                $color = ShoeColor::findOrFail($item['id']);
+                $color->name = $item['name'];
+                $color->save();
+                Log::info(self::LOG_LABEL." Success. Update success for $color.");
+            }
+            catch (ModelNotFoundException $e) {
+                Log::error(self::LOG_LABEL." ERROR. Item with id {$item['id']} not found.");
+                $status = self::STATUS_ERROR_TITLE;
+                $message = "Ups. Hubo un error al buscar el color en la base de datos";
+            }
+            catch (Exception $e) {
+                Log::error(self::LOG_LABEL." ERROR. There was an error with id: {$item['id']}");
+                Log::error($e);
+                $status = self::STATUS_ERROR_TITLE;
+                $message = "Ups. Hubo un error";
+            }
+        }
+
+        Log::info(self::LOG_LABEL." Proccess completed.");
+        return response()->json(["status" => $status, "message" => $message, 'statusCode' => $statusCode]);
     }
 
     public function add_movements(Request $request) {

@@ -12,7 +12,7 @@
           <h4 class="mb-2 mb-sm-0 pt-1">
             <a href="https://mdbootstrap.com/docs/jquery/" target="_blank">Stock</a>
             <span>/</span>
-            <span>Listado</span>
+            <span>Colores</span>
           </h4>
         </div>
 
@@ -24,7 +24,7 @@
 
         <!--Grid column-->
         <div class="col-md-12 mb-4">
-        <stock-list></stock-list>
+        <stock-colors-list></stock-colors-list>
         </div>
       </div>
     </div>

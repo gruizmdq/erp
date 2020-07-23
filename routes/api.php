@@ -47,6 +47,8 @@ Route::middleware('auth:api')->get('/stock/get_movements', 'StockController@get_
 Route::middleware('auth:api')->post('/stock/new_brand', 'StockController@new_brand');
 Route::middleware('auth:api')->post('/stock/new_article', 'StockController@new_article');
 Route::middleware('auth:api')->post('/stock/new_color', 'StockController@new_color');
+Route::middleware('auth:api')->post('/stock/delete_colors', 'StockController@delete_colors');
+Route::middleware('auth:api')->post('/stock/edit_color', 'StockController@edit_color');
 Route::middleware('auth:api')->post('/stock/delete_items', 'StockController@delete_items');
 Route::middleware('auth:api')->post('/stock/update_items', 'StockController@update_items');
 Route::middleware('auth:api')->post('/stock/add_movements', 'StockController@add_movements');
