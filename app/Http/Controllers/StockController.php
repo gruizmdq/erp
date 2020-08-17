@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
-use Exception;
 use Log;
 use App\ShoeBrand;
 use App\ShoeCategory;
@@ -18,6 +17,10 @@ use App\ShoeSucursalItem;
 use App\Shoe;
 use App\Sucursal;
 use App\StockMovement;
+
+use Exception;
+use App\Exceptions\Stock\ExistsSucursalItemException;
+
 
 class StockController extends Controller{
 
@@ -56,8 +59,7 @@ class StockController extends Controller{
 
     public function get_list_stock(Request $request) {
         $request->user()->authorizeRoles(['admin']);
-
-        Log::info(json_encode($request->getContent()));
+        
         $id_brand = $request->input('id_brand');
         $shoe_details = ShoeDetail::where('shoes.id_brand', $id_brand)
                                     ->join('shoes', 'shoes.id', '=', 'shoe_details.id_shoe')
@@ -342,7 +344,8 @@ class StockController extends Controller{
                     $childs = $row->shoeSucursalItem;
                     foreach ($childs as $i)
                         $i->delete();
-                    $row->delete();
+                    $row->delete();                   
+
                     $success[] = $id;
                     Log::info(self::LOG_LABEL."Success. Delete success for $id.");
                 }
@@ -383,23 +386,92 @@ class StockController extends Controller{
             foreach ($items as $id) {
                 Log::info(self::LOG_LABEL." Start delete proccess for $id.");
                 try {
+                    DB::beginTransaction();
+
                     $row = ShoeColor::findOrFail($id);
                     $row->delete();
+
+                    DB::commit();
+
                     $success[] = $id;
                     Log::info(self::LOG_LABEL."Success. Delete success for $id.");
                 }
                 catch (ModelNotFoundException $e) {
                     Log::error(self::LOG_LABEL."ERROR. Item with $id not found.");
                     $failed[] = $id;
+                    DB::rollBack();
+                }
+                catch (ExistsCurusalItemException $e) {
+                    Log::error(self::LOG_LABEL." ERROR. There are stock for id $id.");
+                    $failed[] = $id;
+                    DB::rollBack();
                 }
                 catch (Exception $e) {
                     Log::error(self::LOG_LABEL."ERROR. There was an error with id: $id");
                     Log::error($e);
                     $failed[] = $id;
+                    DB::rollBack();
                 }
             }
             if (count($failed)) {
-                $message = 'Hubo problemas con algunos artículos.';
+                $message = 'Hubo problemas con algunos colores.';
+                $statusCode = 501;
+                $status = self::STATUS_ERROR_TITLE;
+            }
+        }
+
+        Log::info(self::LOG_LABEL."Proccess completed.". PHP_EOL ."Success: ".json_encode($success). PHP_EOL ."Failed: ".json_encode($failed));
+        return response()->json(["success" => $success, "failed" => $failed,  "status" => $status, "message" => $message, 'statusCode' => $statusCode]);
+    }
+
+    public function delete_brands (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
+        Log::info(self::LOG_LABEL." Request to delete brands received: ".json_encode($request->getContent()));
+        
+        $items = $request->input('items', null);
+        $failed = [];
+        $success = [];
+        $status = self::STATUS_SUCCESS_TITLE;
+        $message = 'El stock se modificó correctamente';
+        $statusCode = 200;
+
+        if ($items != null) {
+            foreach ($items as $id) {
+                Log::info(self::LOG_LABEL." Start delete proccess for $id.");
+                try {
+                    DB::beginTransaction();
+
+                    $row = ShoeBrand::findOrFail($id);
+                    //$articles = Shoe::where('id_brand', $row->id)->get();
+                    
+                    $row->delete();
+                    $success[] = $id;
+                    Log::info(self::LOG_LABEL." Success. Delete success for $id.");
+                    
+                    DB::commit();
+                }
+                catch (ModelNotFoundException $e) {
+                    Log::error(self::LOG_LABEL." ERROR. Item with $id not found.");
+                    $failed[] = $id;
+                    DB::rollBack();
+                }
+                catch (ExistsCurusalItemException $e) {
+                    Log::error(self::LOG_LABEL." ERROR. There are stock for id $id.");
+                    $failed[] = $id;
+                    DB::rollBack();
+                }
+                catch (Exception $e) {
+                    Log::error(self::LOG_LABEL." ERROR. There was an error with id: $id");
+                    Log::error($e);
+                    $failed[] = $id;
+                    DB::rollBack();
+                }
+            }
+            if (count($failed)) {
+                $message = 'Ups. Hubo algunos problemas.';
+                $status = self::STATUS_ERROR_TITLE;
                 $statusCode = 501;
             }
         }
@@ -412,7 +484,7 @@ class StockController extends Controller{
         $request->user()->authorizeRoles(['admin']);
 
         Log::info("*****************************************");
-        Log::info(self::LOG_LABEL." Request to delete colors received: ".json_encode($request->getContent()));
+        Log::info(self::LOG_LABEL." Request to edit colors received: ".json_encode($request->getContent()));
         
         $item = $request->input('item', null);
         $statusCode = 200;
@@ -430,6 +502,41 @@ class StockController extends Controller{
                 Log::error(self::LOG_LABEL." ERROR. Item with id {$item['id']} not found.");
                 $status = self::STATUS_ERROR_TITLE;
                 $message = "Ups. Hubo un error al buscar el color en la base de datos";
+            }
+            catch (Exception $e) {
+                Log::error(self::LOG_LABEL." ERROR. There was an error with id: {$item['id']}");
+                Log::error($e);
+                $status = self::STATUS_ERROR_TITLE;
+                $message = "Ups. Hubo un error";
+            }
+        }
+
+        Log::info(self::LOG_LABEL." Proccess completed.");
+        return response()->json(["status" => $status, "message" => $message, 'statusCode' => $statusCode]);
+    }
+
+    public function edit_brand (Request $request) {
+        $request->user()->authorizeRoles(['admin']);
+
+        Log::info("*****************************************");
+        Log::info(self::LOG_LABEL." Request to edit brand received: ".json_encode($request->getContent()));
+        
+        $item = $request->input('item', null);
+        $statusCode = 200;
+        $status = self::STATUS_SUCCESS_TITLE;
+        $message = "¡La marca se editó correctamente!";
+
+        if ($item != null) {
+            try {
+                $brand = ShoeBrand::findOrFail($item['id']);
+                $brand->name = $item['name'];
+                $brand->save();
+                Log::info(self::LOG_LABEL." Success. Update success for $brand.");
+            }
+            catch (ModelNotFoundException $e) {
+                Log::error(self::LOG_LABEL." ERROR. Item with id {$item['id']} not found.");
+                $status = self::STATUS_ERROR_TITLE;
+                $message = "Ups. Hubo un error al buscar la marca en la base de datos";
             }
             catch (Exception $e) {
                 Log::error(self::LOG_LABEL." ERROR. There was an error with id: {$item['id']}");

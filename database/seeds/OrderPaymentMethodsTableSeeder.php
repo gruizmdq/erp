@@ -14,17 +14,18 @@ class OrderPaymentMethodsTableSeeder extends Seeder
     {
         $new = new OrderPaymentMethod();
         $new->name = "Efectivo";
-        $new->type = 1;
-        $new->percentage = 0;
-        $new->installments = 1;
         $new->save();
 
         $new = new OrderPaymentMethod();
-        $new->name = "Efectivo";
-        $new->type = 1;
-        $new->percentage = 0;
-        $new->installments = 1;
+        $new->name = "Tarjeta";
         $new->save();
 
+        $new = new OrderPaymentMethod();
+        $new->name = "Nota de Crédito";
+        $new->save();
+
+        $new = new OrderPaymentMethod();
+        $new->name = "Cuenta Corriente";
+        $new->save();
     }
 }

@@ -19,6 +19,7 @@ class CreateOrderSucursalsTable extends Migration
             $table->unsignedBigInteger('id_sucursal');
             $table->unsignedBigInteger('id_seller');
             $table->unsignedBigInteger('id_cashier');
+            $table->unsignedBigInteger('id_turn');
 
             $table->timestamps();
             $table->softDeletes();
@@ -26,6 +27,7 @@ class CreateOrderSucursalsTable extends Migration
             $table->foreign('id_sucursal')->references('id')->on('sucursals');
             $table->foreign('id_seller')->references('id')->on('users');
             $table->foreign('id_cashier')->references('id')->on('users');
+            $table->foreign('id_turn')->references('id')->on('cash_register_turns');
         });
     }
 

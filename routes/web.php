@@ -9,22 +9,16 @@ use App\OrderSucursal;
 Auth::routes(['register' => false]);
 Route::get('/pdf', 'PdfController@getIndex')->middleware('auth');
 
-Route::get('/home', 'StockController@index')->name('home')->middleware('auth');
+Route::get('/', 'HomeController@index')->name('home')->middleware('auth');
 
+Route::get("g", 'TiendaNubeController@index');
 
 /*************************/
 /****** SELL ROUTES *****/
 /***********************/
-Route::get('/order', function(Request $request) {
-    $a = new Order();
-    $b = 
-    $a = Order::find(1)->orderable; 
-    $b = OrderSucursal::find(1)->order;
-    
-    return $a;
-});
-Route::get('/sell', function (Request $request) {
-    return view('sell.home');
+Route::get('/sell', 'OrderController@index')->middleware('auth');
+Route::get('/order/payment_methods', function (Request $request) {
+    return view('order.payment_methods');
 })->middleware('auth');
 
 
@@ -50,3 +44,11 @@ Route::get('/stock/articles', function (Request $request) {
     return view('stock.articles');
 })->middleware('auth');
 
+
+
+/*************************/
+/* CASH REGISTER ROUTES */
+/***********************/
+Route::get('/cash', function (Request $request) {    
+    return view('cash.home');
+})->middleware('auth');

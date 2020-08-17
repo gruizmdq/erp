@@ -149,7 +149,7 @@
       },
       getDetailItem() {
         if (this.barcode != null) {
-            axios.get('/api/stock/get_detail_item_barcode', {params: { barcode: this.barcode }})
+            axios.get('/api/stock/detail_item_barcode', {params: { barcode: this.barcode }})
             .then(response => {
               let data = response.data
               this.barcode = null
@@ -192,18 +192,18 @@
         this.searched = searchByBrandName(this.data, this.search)
       },
       getData(){
-        axios.get('/api/stock/get_movements').then(response => {
+        axios.get('/api/stock/movements').then(response => {
             this.data = response.data;
             this.searched = this.data
         });
       },
       getSucursals() {
-        axios.get('/api/get_sucursals').then(response => {
+        axios.get('/api/sucursals').then(response => {
             this.sucursals = response.data;
         });
       },
       confirmSubmit() {
-        axios.post('/api/stock/add_movements', {items: this.detailItems.map(item => {
+        axios.post('/api/stock/movements', {items: this.detailItems.map(item => {
                                                         return {
                                                           id: item.id, 
                                                           qty: item.qty,

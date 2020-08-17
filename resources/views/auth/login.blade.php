@@ -10,9 +10,11 @@
                 <div class="card-body">
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
+                        <input id="lat" type="hidden" name="lat" value="-37.9843687" required>
+                        <input id="long" type="hidden" name="long" value="-57.5732545" required>
 
                         <div class="form-group row">
-                            <label for="username" class="col-md-4 col-form-label text-md-right">Username Or Email</label>
+                            <label for="username" class="col-md-4 col-form-label text-md-right">Usuario / Email</label>
                         
                             <div class="col-md-6">
                                 <input id="username" type="username" class="form-control @error('username') is-invalid @enderror" name="username" value="{{ old('username') }}" required  autofocus>
@@ -50,7 +52,7 @@
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div class="form-group row mb-0">
                             <div class="col-md-8 offset-md-4">
                                 <button type="submit" class="btn btn-primary">
@@ -64,6 +66,8 @@
                                 @endif
                             </div>
                         </div>
+
+                        <p id="location"></p>
                     </form>
                 </div>
             </div>
@@ -71,3 +75,32 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+
+<script>
+
+    //TODO. CHeuqeuar esto, pasa que necesita ssl. Es para localizar y poner en la cookie la sucursal
+    var x = document.getElementById("location");
+
+    var options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    };
+
+    function success(pos) {
+        var crd = pos.coords;
+
+        console.log('Your current position is:');
+        console.log('Latitude : ' + crd.latitude);
+        console.log('Longitude: ' + crd.longitude);
+        console.log('More or less ' + crd.accuracy + ' meters.');
+    };
+
+    function error(err) {
+        console.warn('ERROR(' + err.code + '): ' + err.message);
+    };
+    navigator.geolocation.getCurrentPosition(success, error, options);
+</script>
+@endpush

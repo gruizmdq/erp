@@ -39,7 +39,7 @@
       return{
         items: [],
         selected: null,
-        selectedName: '',
+        selectedName: this.selectedOption,
         options: [],
         new_color_name: null,
         activePrompt: false,
@@ -53,6 +53,10 @@
         type: Boolean,
         default: true
       },
+      selectedOption: {
+        type: String,
+        default: null
+      }
     },
     methods: {
         getOptions (searchTerm) {
@@ -72,7 +76,7 @@
         sendNewColor(value) {
           if (value != null) {
             this.new_color_name = value
-            axios.post('/api/stock/new_color', { name: value })
+            axios.post('/api/stock/color', { name: value })
             .then(response => {
               if (response.data.statusCode == 200){
                 this.alert_title = "¡Bien papá!"
@@ -95,7 +99,7 @@
         }
     },
     mounted() {
-        axios.get('/api/stock/get_colors').then(response => {
+        axios.get('/api/stock/colors').then(response => {
             this.items = response.data;
             this.options = response.data
         });

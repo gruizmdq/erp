@@ -36,7 +36,7 @@
 
     <md-dialog-confirm
       :md-active.sync="activeConfirmDialog"
-      md-title="¿Seguro querés borrar esos artículos?"
+      md-title="¿Seguro querés borrar esos colores?"
       md-confirm-text="Dale mecha"
       md-cancel-text="Cancelar"
       @md-confirm="deleteSubmit" />
@@ -108,7 +108,7 @@
         return `${count} color${plural} seleccionado${plural}`
       },
       getData(){
-        axios.get('/api/stock/get_colors').then(response => {
+        axios.get('/api/stock/colors').then(response => {
             this.items = response.data;
             this.searched = this.items
         });
@@ -118,7 +118,7 @@
       },
       editColor(item) {
         if (item != null)
-          axios.post('/api/stock/edit_color', {item: item})
+          axios.put('/api/stock/colors', {item: item})
           .then(response => {
             this.alert_content = response.data.message
             this.showEditResponse = true
@@ -131,7 +131,7 @@
         else
           items = this.selected.map(item => item.id)
 
-        axios.post('/api/stock/delete_colors', {items: items})
+        axios.delete('/api/stock/colors', {items: items})
         .then(response => {
             this.items = this.items.filter(item => !response.data.success.includes(item.id))
             this.searched = this.items
@@ -142,7 +142,7 @@
       },
       sendNewColor() {
         if (this.newColor != null) {
-          axios.post('/api/stock/new_color', {name: this.newColor})
+          axios.post('/api/stock/colors', {name: this.newColor})
           .then(response => {
               this.items.push(response.data.data)
               this.searched = this.items

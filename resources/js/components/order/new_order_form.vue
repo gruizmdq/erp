@@ -4,7 +4,7 @@
 			<div class="row">
 				<div class="col-md-4">
 					<div class="form-group">
-						<label for="client">Cliente</label>
+						<label ref="client" for="client">Cliente</label>
 						<input type="text" id="client" class="form-control" placeholder="Cliente" />
 					</div>
 					<user-selector label="Vendedor" @update="updateSeller" role="seller"></user-selector>
@@ -40,23 +40,22 @@
 					</tr>
 				</thead>
 				<tbody>
-					<new-order-row v-for="i in items" :key="i.code" :item.sync="i"></new-order-row>
+					<new-order-row v-for="i in items" :key="'item-'+i.id+Math.floor(Math.random() * 255)" :item="i"></new-order-row>
 				</tbody>
 			</table>
 			<hr />
-			<order-discount @update="updateOrderDiscount"></order-discount>
+			<order-discount v-if="items && items.length > 0" @update="updateOrderDiscount"></order-discount>
 			<hr />
 			<div v-if="items.length > 0" class="row">
 				<div class="col-md-6 mt-3">
 					<div>
-						<h4>Pago</h4>
-						<div class="form-group mt-3">
-							<payment-method-selector ref="paymentMethodSelector" @update="updatePaymentMethod"></payment-method-selector>
+						<h4><strong>Pago</strong></h4>
+						<div v-if="paymentMethods.length > 0" class="mt-3">
+							<h6 v-for="payment in paymentMethods" :key="'payment-'+payment">${{ payment.amount }} - {{ paymentDescription(payment) }}</h6>
+							<hr />	
 						</div>
-						<div v-if="paymentMethod && paymentMethod.name === 'Efectivo'" class="form-group mt-3">
-							<label>Monto</label>
-							<input type="number" :min="total" v-model="paidMoney"/>
-							<h4 v-if="paidMoney" class="mt-3">Cambio: ${{ change }} pelotudo!</h4>
+						<div class="form-group mt-3">
+							<payment-method-selector :amountToPay.sync="amountToPay" ref="paymentMethodSelector" @update="updatePaymentMethod"></payment-method-selector>
 						</div>
 					</div>
 				</div>
@@ -66,26 +65,40 @@
 					</div>
 					<hr />
 					<h3 v-if="orderDiscount && orderDiscount.amount > 0">Descuento: <strong> % {{ orderDiscount.amount }} </strong></h3>
-					<h3 v-if="paymentMethod && paymentMethod.charge > 0">Recargo: <strong>% {{paymentMethod.charge}}</strong></h3>
+					<div>
+						<h3>Recargo: <strong> ${{ getCharge }}</strong></h3>
+					</div>
 					<hr>
 					<h2>Total: <strong>${{ total.toLocaleString() }}</strong></h2>
 				</div>
 			</div>
 
-			<div class="row">
+			<div class="row mt-3">
 				<div class="col-md-12">
 					<div class="form-group">
 						<label for="comments">Comentarios</label>
-						<textarea class="form-control rounded-0" id="comments" rows="1"></textarea>
+						<textarea @keydown.esc="$refs.paymentMethodSelector.$refs.method.focus()" ref="comments" v-model="comment" class="form-control rounded-0" id="comments" rows="1"></textarea>
 					</div>
 				</div>
 			</div>
 
 			<div class="buttons text-right">
-				<button type="button" class="btn btn-primary waves-effect">Confirmar</button>
-				<button type="button" class="btn btn-outline-primary waves-effect">Borrar</button>
+				<button v-if="paymentMethod && (amountToPay - paymentMethod.amount <= 0)" ref="sendOrder" type="button" class="boton" @keydown.esc="$refs.comments.focus()" @click="sendOrder">Confirmar</button>
+				<button type="button" class="boton" @keydown.esc="$refs.sendOrder.focus()" @keydown.tab="$event.preventDefault()" @click="activeDeleteDialog = true">Borrar</button>
 			</div>
 		</form>
+
+		<md-dialog-confirm
+			:md-active.sync="activeDeleteDialog"
+			md-title="¿Seguro querés borrar cancelar esta orden?"
+			md-confirm-text="Dale mecha"
+			md-cancel-text="Cancelar"
+			@md-confirm="sendResetNotification" />
+
+		<md-dialog-alert
+			:md-active.sync="alertActive"
+			:md-title="alertTitle"
+			:md-content="alertContent" />
 	</div>
 
 </template>
@@ -104,20 +117,50 @@
 				subtotal: 0,
 				discount: 0,
 				paymentMethod: null,
-				notFoundItemMessage: false
+				paymentMethods: [],
+				comment: null,
+
+				notFoundItemMessage: false,
+				activeDeleteDialog: false,
+
+				alertActive: false,
+				alertTitle: null,
+				alertContent: null
 			 }
 		 },
 		 computed: {
-			 total () {
-				let subtotal = this.subtotal
+			 amountToPay() {
+				var amountToPay = this.subtotal
+				if (this.orderDiscount)
+					amountToPay = amountToPay * (1 - this.orderDiscount.amount / 100)
+				this.paymentMethods.forEach(element => {
+					if (element.option)
+						amountToPay = amountToPay - ( element.amount / (1 + element.option.charge / 100))
+					else
+						amountToPay = amountToPay - element.amount
+				})
+				return amountToPay
+			 },
+			 total() {
+				let subtotal = Number(this.subtotal)
 				if (this.orderDiscount)
 					subtotal = subtotal * (1 - this.orderDiscount.amount / 100)
-				if (this.paymentMethod)
-					subtotal = subtotal * (1 - this.paymentMethod.charge / 100)
-				 return Number(subtotal.toFixed(2))
+
+				subtotal += this.getCharge
+				return subtotal
 			 },
 			 change() {
 				 return (this.paidMoney - this.total).toLocaleString()
+			 },
+			 getCharge() {
+				 var charge = 0
+				 this.paymentMethods.forEach(element => {
+					if (element.option)
+						charge = charge + ( element.amount * element.option.charge / 100)
+				 })
+				 if (this.paymentMethod && this.paymentMethod.option)
+				 	charge = charge + ( this.paymentMethod.amount * this.paymentMethod.option.charge / 100)
+				 return charge
 			 }
 		 },
 		 methods: {
@@ -135,13 +178,17 @@
 				if (this.barcode != null || (this.items.length === 0 && this.newItemDescription == null) )
 					e.preventDefault()
 			}, 
-			updatePaymentMethod(value) {
-				this.paymentMethod = value
+			updatePaymentMethod(payment, needOther) {
+				if (needOther)
+					this.paymentMethods.push(payment)
+				else {
+					this.$refs.comments.focus()
+					this.paymentMethod = payment
+				}
 			},
 			updateOrderDiscount(value) {
-				console.log(value)
 				this.orderDiscount = value
-				this.$refs.paymentMethodSelector.$refs.select[0].focus()
+				this.$refs.paymentMethodSelector.$refs.method[0].focus()
 			},
 			updateSeller(value) {
 				this.seller = value
@@ -151,7 +198,7 @@
 			},
 			getDetailItem(e) {
 				if (this.barcode != null) {
-					axios.get('/api/stock/get_detail_item_barcode', {params: { barcode: this.barcode }})
+					axios.get('/api/stock/detail_item_barcode', {params: { barcode: this.barcode }})
 					.then(response => {
 						let data = response.data
 						this.barcode = null
@@ -165,7 +212,79 @@
 					})
 					.finally(() => this.$refs.article.focus())
 				}
+			},
+			paymentDescription(payment) {
+				if (payment.method.name != "Tarjeta")
+					return payment.method.name
+
+				let plural = ''
+
+				if (payment.option.installments > 1) {
+					plural = 's'
+				}
+				let installment = (payment.amount / payment.option.installments).toLocaleString()
+				return `${payment.option.installments} cuota${plural} de $${installment} (${payment.card.name})`
+			},
+			sendOrder() {
+				axios.post('/api/order', { order: this.createRequest() })
+				.then(response => {
+					this.alertTitle = response.data.status
+					this.alertContent = response.data.message
+					this.alertActive = true
+					this.resetOrder()
+				})
+			},
+			sendResetNotification() {
+				axios.post('/api/order/reset', { id_cashier: this.cashier.id, id_seller: this.seller.id })
+				.then(response => {
+					this.resetOrder()
+				})
+			},
+			resetOrder() {
+				this.paidMoney = null
+				this.barcode = null
+				this.seller = null
+				this.cashier = null
+				this.items = []
+				this.orderDiscount = null
+				this.newItemDescription = null
+				this.subtotal = 0
+				this.discount = 0
+				this.comment = null
+				this.paymentMethods = []
+				this.notFoundItemMessage = false
+				this.activeDeleteDialog = false
+
+				this.$refs.client.focus()	
+			},
+			createRequest() {
+				let data = {}
+				data.seller = this.seller.id
+				data.cashier = this.cashier.id
+				//TODO cambiar esto en futuro para agrupar items iguales
+				data.qty = this.items.length
+				data.items = this.items
+				data.orderDiscount = this.orderDiscount
+				data.subtotal = parseFloat(this.subtotal)
+				data.total = parseFloat(this.total)
+				data.discount = this.discount
+				//add payment methods
+				data.paymentMethods = this.paymentMethods
+				//Append lastone
+				data.paymentMethods.push(this.paymentMethod)
+				data.comment = this.comment
+				
+				return data
 			}
+		},
+		mounted() {
+			this.$refs.client.focus()	
 		}
 	}
 </script>
+<style scoped>
+	.boton:focus {
+		background: black;
+		color: white;
+	}
+</style>

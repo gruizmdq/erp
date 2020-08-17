@@ -21,8 +21,11 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('home');
+        if ($request->user()->hasRole(['admin']))
+            return redirect('stock');
+        if ($request->user()->hasRole(['cashier']))
+            return redirect('cash');
     }
 }

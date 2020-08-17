@@ -1,6 +1,6 @@
 <template>
     <div>
-        <md-dialog :md-active.sync="showDialog">
+        <md-dialog @mounted="$refs.input.focus()" :md-active.sync="showDialog">
             <md-dialog-title>Descuento</md-dialog-title>
             <div class="card-body">
                 <!-- For now it s always percentage
@@ -11,12 +11,12 @@
                 <div class="form-group mt-3">
                     <label>Importe</label>
                     <span class="input-symbol z-depth-1" :class="symbol">
-                        <input ref="input" type="number" min="0" v-model="discount.amount"/>
+                        <input ref="input" @keydown.tab="disableTab($event, discount.amount)" type="number" min="0" v-model="discount.amount"/>
                     </span>
                 </div>
                 <div class="form-group mt-3">
                     <label>Comentarios</label>
-                    <textarea class="form-control rounded-0" v-model="discount.comments" rows="3"></textarea>
+                    <textarea @keydown.esc="$refs.input.focus()" @keydown.tab="disableTab($event, discount.comments)" class="form-control rounded-0" v-model="discount.comments" rows="3"></textarea>
                 </div>
                 <p v-if="textHelper" class="mt-3 red-text font-italic">
                     {{ textHelper }}
@@ -24,12 +24,12 @@
             </div>
             <md-dialog-actions>
                 <md-button class="md-primary" @click="showDialog = false">Cancelar</md-button>
-                <md-button class="md-primary" @click="confirm">Confirmar</md-button>
+                <md-button @keydown.tab="disableTab($event)" class="md-primary" @click="confirm">Confirmar</md-button>
             </md-dialog-actions>
         </md-dialog>
 
     <button type="button" v-if="showDescription == false && itemRow == false" class="btn-primary btn-sm" @click="showDialog = true">Crear descuento</button>
-    <button type="button" v-if="showDeleteButton" class="btn-outline-danger btn-sm" @click="deleteDiscount">Borrar descuento</button>
+    <button ref="deleteButton" type="button" v-if="showDeleteButton" class="btn-outline-danger btn-sm" @click="deleteDiscount">Borrar descuento</button>
    <!-- For now it s always for entire order
    <button v-if="showDescription == false && itemRow" class="btn-primary btn-sm" @click="showDialog = true"><i class="fas fa-plus"></i></button>
     
@@ -98,8 +98,12 @@ export default {
             this.textHelper = null
             this.showDescription = false
             this.$emit('update', null)
-        }
-    }
+        },
+        disableTab(e, param) {
+            if (param == null)
+                e.preventDefault()
+        }, 
+    },
 }
 </script>
 <style scoped>

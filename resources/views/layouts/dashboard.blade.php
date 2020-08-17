@@ -14,22 +14,6 @@
   <link href="/css/mdb.min.css" rel="stylesheet">
   <!-- Your custom styles (optional) -->
   <link href="/css/style.min.css" rel="stylesheet">
-  <style>
-
-    .map-container{
-overflow:hidden;
-padding-bottom:56.25%;
-position:relative;
-height:0;
-}
-.map-container iframe{
-left:0;
-top:0;
-height:100%;
-width:100%;
-position:absolute;
-}
-  </style>
 </head>
 
 <body class="grey lighten-3">
@@ -111,9 +95,7 @@ position:absolute;
       </a>
 
       <div class="list-group list-group-flush">
-        <a href="/" class="list-group-item waves-effect" tabindex="-1">
-          <i class="fas fa-chart-pie mr-3"></i>Home
-        </a>
+        @if (!Auth::guest() && Auth::user()->hasRole('admin'))
         <div class="list-group-item pb-0">
           <a href="/stock" class="list-group-item-action waves-effect py-1" tabindex="-1">
             <i class="fas fa-user mr-3"></i>Stock</a>
@@ -135,6 +117,13 @@ position:absolute;
           <i class="fas fa-map mr-3"></i>Vendedores</a>
         <a href="#" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
           <i class="fas fa-money-bill-alt mr-3"></i>Estadísticas</a>
+        @endif
+        @if (!Auth::guest() && (Auth::user()->hasRole('cashier') || Auth::user()->hasRole('admin')))
+        <a href="/sell" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
+          <i class="fas fa-money-bill-alt mr-3"></i>Nueva orden</a>
+        <a href="/cash" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
+          <i class="fas fa-money-bill-alt mr-3"></i>Caja</a>
+        @endif
       </div>
 
     </div>

@@ -86,7 +86,7 @@
         sendNewBrand(value) {
           if (value != null) {
             this.new_brand_name = value
-            axios.post('/api/stock/new_brand', { name: value })
+            axios.post('/api/stock', { name: value })
             .then(response => {
               if (response.data.statusCode == 200){
                 this.alert_title = "¡Bien papá!"
@@ -109,7 +109,7 @@
         }
     },
     mounted() {
-        axios.get('/api/stock/get_brands').then(response => {
+        axios.get('/api/stock/brands').then(response => {
             this.items = response.data;
             this.options = response.data
         });

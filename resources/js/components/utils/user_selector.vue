@@ -45,20 +45,29 @@
             this.$emit('update', user)
         },
         getData() {
-            axios.get('/api/get_users', this.role != "" ? {params: { role: this.role }} : null)
+            axios.get('/api/users', this.role != "" ? {params: { role: this.role }} : null)
             .then(response => {
                 console.log(response.data)
                 this.options = response.data;
             });
         },
         findUser() {
+          var found = false
           this.options.forEach(user => {
             if (user.id == this.search) {
               this.user = user.name
+              found = true
               this.updateUser(user)
               return;
             }
           })
+
+          if (!found) {
+            this.user = ''
+            this.updateUser(null)
+          }
+
+          
         }
     },
     created() {

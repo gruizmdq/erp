@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Order extends Model
 {   
     use SoftDeletes;
+    protected $guarded = [];
     protected $primaryKey = 'order_id';
     
     public function orderable() {
@@ -16,5 +17,9 @@ class Order extends Model
 
     public function order_items() {
         return $this->hasMany('App\OrderItem', 'id_order');
+    }
+
+    public function payments() {
+        return $this->hasMany('App\OrderPayment', 'id_order');
     }
 }

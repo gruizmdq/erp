@@ -133,7 +133,7 @@
                 });
             },
             submitForm(){
-                axios.post('/api/stock/update_items', { items: this.detailItems })
+                axios.put('/api/stock/articles', { items: this.detailItems })
                 .then(response => {
                     this.detailItems = response.data.items
                     this.alert_title = response.data.status
@@ -147,7 +147,7 @@
                     return
                 }
                 else {
-                    axios.get('/api/stock/get_detail_item', {params: {id_shoe: this.article.id, id_color: this.color.id, from: this.numberFrom, to: this.numberTo}})
+                    axios.get('/api/stock/detail_item', {params: {id_shoe: this.article.id, id_color: this.color.id, from: this.numberFrom, to: this.numberTo}})
                     .then(response => {
                         var json = response.data
                         var items = []

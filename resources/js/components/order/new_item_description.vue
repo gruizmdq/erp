@@ -28,7 +28,7 @@
                             <input min="0" max="100" type="number" v-model="discount">
                         </span>
                     </td>
-                    <td><input type="button" @click="$emit('confirmitem', price, discount, subtotal)" value="Aceptar"></td>
+                    <td><input class="boton" type="button" @click="$emit('confirmitem', price, discount, subtotal)" value="Aceptar"></td>
                 </tr>
             </tbody>
         </table>
@@ -79,5 +79,9 @@ export default {
     }
     .money:before {
         content:"$";
+    }
+    .boton:focus {
+        background: black;
+        color: white;
     }
 </style>
