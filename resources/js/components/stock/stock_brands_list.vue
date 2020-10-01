@@ -108,7 +108,7 @@
         return `${count} marca${plural} seleccionada${plural}`
       },
       getData(){
-        axios.get('/api/stock/get_brands').then(response => {
+        axios.get('/api/stock/brands').then(response => {
             this.items = response.data;
             this.searched = this.items
         });
@@ -118,7 +118,7 @@
       },
       editBrand(item) {
         if (item != null)
-          axios.post('/api/stock/edit_brand', {item: item})
+          axios.put('/api/stock/brands', {item: item})
           .then(response => {
             this.alert_content = response.data.message
             this.showEditResponse = true

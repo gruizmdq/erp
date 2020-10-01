@@ -21,6 +21,7 @@ use App\CashRegisterTurn;
 
 use App\ShoeSucursalItem;
 use App\ShoeDetail;
+use App\Sucursal;
 
 use Exception;
 use Log;
@@ -31,6 +32,8 @@ class OrderController extends Controller
     const STATUS_ERROR_TITLE = "Ups. Algo salió mal";
     const STATUS_SUCCESS_TITLE = "¡Bien papá!";
     const STATUS_SUCCESS_CODE = 200;
+
+    const PAGINATE_SIZE = 50;
 
     public function index(Request $request) {
         $request->user()->authorizeRoles(['admin', 'cashier']);
@@ -59,19 +62,114 @@ class OrderController extends Controller
         }
     }
 
+    public function get_order(Request $request, $id) {
+        $request->user()->authorizeRoles(['admin', 'cashier']);
+
+        try {
+            $order = Order::findOrFail($id);
+            $items = OrderItem::select([
+                                        'order_items.buy_price',
+                                        'order_items.sell_price',
+                                        'order_items.total',
+                                        'order_items.qty',
+                                        'shoe_details.number',
+                                        'shoes.code',
+                                        'shoe_colors.name as color',
+                                        'shoe_brands.name as brand'
+                                    ])
+                                    ->join('shoe_details', 'order_items.id_shoe_detail', 'shoe_details.id')
+                                    ->join('shoes', 'shoe_details.id_shoe', 'shoes.id')
+                                    ->join('shoe_brands', 'shoes.id_brand', 'shoe_brands.id')
+                                    ->join('shoe_colors', 'shoe_details.id_color', 'shoe_colors.id')
+                                    ->where('order_items.id_order', $id)
+                                    ->get();
+            LOG::info($items);
+            $payments = OrderPayment::select([
+                                        'order_payments.total',
+                                        'order_payment_methods.name as payment_method',
+                                        'order_payment_method_cards.name as payment_card',
+                                        'order_payment_method_card_options.installments',
+                                        'order_payment_method_card_options.charge'
+                                    ])
+                                    ->join('order_payment_methods', 'order_payments.id_payment_method', 'order_payment_methods.id')
+                                    ->leftJoin('order_payment_method_cards', 'order_payments.id_payment_card', 'order_payment_method_cards.id')
+                                    ->leftJoin('order_payment_method_card_options', 'order_payments.id_payment_option', 'order_payment_method_card_options.id')
+                                    ->where('order_payments.id_order', $id)
+                                    ->get();
+            $order->description = $order->orderable->getDescription();
+            $order->items = $items;
+            $order->payments;
+            return $order;
+            
+        }
+        catch (ModelNotFoundException $e) {
+            Log::error(self::LOG_LABEL." ERROR. Order with $id not found.");
+        }
+        catch (Exception $e) {
+            Log::error(self::LOG_LABEL." ERROR. There was an error with id: $id");
+            Log::error($e);
+        }
+    }
+
+    public function get_orders(Request $request) {
+        $request->user()->authorizeRoles(['admin', 'cashier']);
+
+        //TODO FILTERS!
+        //$filters = json_decode($request->input(self::FILTERS_KEY_NAME, null), true);
+        $filters = null;
+        $orders = DB::table('orders')->orderByRaw('order_id DESC');
+        if ($filters != null) {
+            foreach ($filters as $key => $value) {
+                $orders->where($key, $value);
+            }
+        }
+
+        try {
+            $order_buy_price = OrderItem::select('id_order', DB::raw('sum(buy_price) as buy_price'))
+                                ->groupBy('id_order');
+            $orders = $orders->joinSub($order_buy_price, 'buy_price', function($join) {
+                $join->on('orders.order_id', '=', 'buy_price.id_order');
+            });
+            
+            //GET SUCURSAL NAME!
+            if ($request->input('type', null) == 'sucursal') {
+                $sucursal = Sucursal::select('name as type', 'order_sucursals.id as id_order')
+                                    ->join('order_sucursals', 'sucursals.id', 'order_sucursals.id_sucursal');
+                $orders->joinSub($sucursal, 'sucursal', function($join) {
+                    $join->on('orders.order_id', 'sucursal.id_order');
+                });
+            }
+            //TODO obtener ordenes de tienda nube, marketplace, etc.
+            $orders = $orders->paginate(self::PAGINATE_SIZE);
+        }
+        catch (Exception $e) {
+            Log::error(self::LOG_LABEL." ERROR. Error performing get action.");
+            Log::error($e);
+            return response()->json(['status' => 'asda', 'message'=> 'message', 'statusCode' => 501 ]);
+        }
+        return $orders;
+    }
     public function get_payment_methods (Request $request) {
+        $request->user()->authorizeRoles(['admin', 'cashier']);
+
         return OrderPaymentMethod::get();
     }
 
     public function get_payment_method_cards (Request $request) {
+        $request->user()->authorizeRoles(['admin', 'cashier']);
+
         return OrderPaymentMethodCard::get();
     }
 
     public function get_payment_method_card_options (Request $request) {
+        $request->user()->authorizeRoles(['admin', 'cashier']);
+
         return OrderPaymentMethodCardOption::where('id_card', $request->input('id_card'))->get();
     }
 
     public function new_order (Request $request) {
+        $request->user()->authorizeRoles(['admin', 'cashier']);
+
         Log::info(self::LOG_LABEL." Request to create order: ".json_encode($request->input('order')));
         $data = $request->input('order');
         $id_sucursal = $this->get_cookie('id_sucursal');
@@ -135,6 +233,7 @@ class OrderController extends Controller
                 $new->id_payment_method = $payment['method']['id'];
                 $new->id_payment_card = $payment['card'] ? $payment['card']['id'] : null;
                 $new->id_payment_option = $payment['option'] ? $payment['option']['id'] : null;
+                $new->coupon = $payment['coupon'];
                 $new->total = $payment['amount'];
                 $new->save();
                 Log::info(self::LOG_LABEL." New payment for order (id: {$order->order_id}) created");
@@ -165,6 +264,9 @@ class OrderController extends Controller
         catch (Exception $e) {
             Log::error(self::LOG_LABEL." Error.");
             Log::error($e);
+            $message = 'Hubo problemas al crear la venta.';
+            $statusCode = 501;
+            $status = self::STATUS_ERROR_TITLE;
             DB::rollBack();
 
         }

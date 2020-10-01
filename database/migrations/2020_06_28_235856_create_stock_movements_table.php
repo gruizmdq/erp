@@ -15,18 +15,16 @@ class CreateStockMovementsTable extends Migration
     {
         Schema::create('stock_movements', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_shoe_detail');
             $table->unsignedBigInteger('id_sucursal_from');
             $table->unsignedBigInteger('id_sucursal_to');
+            $table->string('description')->nullable();
             $table->unsignedSmallInteger('qty');
             $table->unsignedSmallInteger('status')->default($value = 0);
             $table->timestamps();
 
-            $table->foreign('id_shoe_detail')->references('id')->on('shoe_details');
             $table->foreign('id_sucursal_from')->references('id')->on('sucursals');
             $table->foreign('id_sucursal_to')->references('id')->on('sucursals');
             
-            $table->softDeletes();
         });
     }
 

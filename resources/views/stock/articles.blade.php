@@ -29,13 +29,3 @@
       </div>
     </div>
 @endsection
-
-@section('scripts')
-<script src="{{ asset('/js/addons/datatables.min.js') }}"></script>
-<script>
-  $(document).ready(function () {
-  $('#table').DataTable();
-  $('.dataTables_length').addClass('bs-select');
-});
-</script> 
-@endsection

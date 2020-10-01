@@ -14,9 +14,9 @@
                     <div class="card p-3">
                         <p class="mb-0">Ventas</p>
                         <hr>
-                        <p>Ventas Contado: <strong>${{ cashSales}}</strong></p>
-                        <p>Ventas Tarjeta: <strong>${{ cardSales }}</strong></p>
-                        <p>Cuenta Corriente: <strong>$123.000</strong></p>
+                        <p>Ventas Contado: <strong>${{ getSales(EFECTIVO).toLocaleString(2) }}</strong></p>
+                        <p>Ventas Tarjeta: <strong>${{ getSales(CARD).toLocaleString(2) }}</strong></p>
+                        <p>Cuenta Corriente: <strong>${{ getSales(CUENTA_CORRIENTE).toLocaleString(2) }}</strong></p>
                         <hr>
                         <p>Total: <strong>${{ totalSales }}</strong></p>
                     </div>
@@ -39,30 +39,8 @@
                 </div>
 
                 <div class="col-md-3">
-                    <button type="button" class="btn btn-sm btn-primary" @click="getTotalTurnCash">Cerrar Turno</button>
-                </div>
-
-            </div>
-            <hr>
-            <div class="row">
-                <div class="col-md-9">
-                    <div class="form-row">
-                        <div class="form-group col-md-3">
-                            <label for="inputEmail4">Z</label>
-                            <input type="text" class="form-control" id="inputEmail4">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="inputPassword4">Guardar</label>
-                            <input type="password" class="form-control" id="inputPassword4">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="inputPassword4">Diferencia</label>
-                            <input type="password" class="form-control" id="inputPassword4">
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-sm btn-primary">Cerrar Día</button>
+                    <button type="button" class="btn btn-sm btn-primary" @click="getTotalTurnCash(closeDay = false)">Cerrar Turno</button>
+                    <button type="button" class="btn btn-sm btn-primary" @click="getTotalTurnCash(closeDay = true)">Cerrar Día</button>
                 </div>
             </div>
 
@@ -92,15 +70,27 @@
         <md-dialog :md-active.sync="showCloseTurnDialog">
             <md-dialog-title>Cerrar Turno</md-dialog-title>
             <div class="p-3">
-                <p>Caja: $<strong>{{ totalTurnCash }}</strong></p>
-                <div class="form-group p-1">
-                    <label for="inputPassword4">Ajustar Caja</label>
-                    <input v-model.number='turnCorrection' type="number" class="form-control">
+                <p>Ventas: $<strong>{{ totalTurnCash.toLocaleString(2) }}</strong></p>
+                <p>Egresos: $<strong>{{ totalOutcomes.toLocaleString(2) }}</strong></p>
+                <p>Ingresos: $<strong>{{ totalIncomes.toLocaleString(2) }}</strong></p>
+                <hr>
+                <p>Inicial: $<strong v-if="turn">{{ turn.start_cash.toLocaleString(2) }}</strong></p>
+                <label class="mt-1">Caja Actual</label>
+                <input @change="setTurnCorrection" v-model.number='actualCash' type="number" class="form-control">
+                <label class="mt-1">Ajustar Caja</label>
+                <input v-model.number='turnCorrection' type="number" class="form-control">
+                <div v-if="closeDay" class='mt-2'>
+                    <label class="mt-1">Z</label>
+                    <input v-model.number='z' type="number" class="form-control">
+                    <label class="mt-1">Guardar</label>
+                    <input v-model.number='guardar' type="number" class="form-control">
+                    <p class="mt-1">Diferencia: $<strong>{{ diference  }}</strong></p>
                 </div>
             </div>
             <md-dialog-actions>
                 <md-button class="md-primary" @click="showCloseTurnDialog = false">Cancelar</md-button>
-                <md-button class="md-primary" @click="closeTurn">Enviar</md-button>
+                <md-button v-if="!closeDay" class="md-primary" @click="closeTurn">Enviar</md-button>
+                <md-button v-if="closeDay" class="md-primary" @click="closeDayCashRegister">Enviar</md-button>
             </md-dialog-actions>
         </md-dialog>
     </div>
@@ -110,6 +100,10 @@ export default {
     name: "CashComponent",
     data() {
         return {
+            EFECTIVO: 1,
+            CARD: 2, 
+            CUENTA_CORRIENTE: 3, 
+
             cashRegister: null,
             turn: null,
             showAlert: false,
@@ -119,23 +113,43 @@ export default {
             showDialog: null,
             movementsType: ['Egreso', 'Ingreso'],
 
+            actualCash: 0,
+
             showCloseTurnDialog: false,
             turnCorrection: 0,
             totalTurnCash: 0,
+            totalTurnMovements: [],
+
+            closeDay: false,
+            z: 0,
+            guardar: 0,
         }
     },
     computed: {
+        diference() {
+            return this.actualCash - this.guardar
+        },
         outcomes() {
             return this.turn.movements != null ? this.turn.movements.filter(item => item.type == 0) : []
         },
         incomes() {
             return this.turn.movements != null ? this.turn.movements.filter(item => item.type == 1) : []
         },
-        cashSales() {
-            return this.getSales(1).toLocaleString(2)
+        totalIncomes() {
+            var total = 0
+            this.totalTurnMovements.forEach(item => {
+                if (item.type == 1)
+                    total = item.total
+            })
+            return total
         },
-        cardSales() {
-            return this.getSales(2).toLocaleString(2)
+        totalOutcomes() {
+            var total = 0
+            this.totalTurnMovements.forEach(item => {
+                if (item.type == 0)
+                    total = item.total
+            })
+            return total
         },
         totalSales() {
             return (this.getSales(1) + this.getSales(2)).toLocaleString(2)
@@ -175,8 +189,11 @@ export default {
             }
         },
         newMovement() {
-            axios.post('/api/cash/movement', {movement: this.newMovementItem}).then(response => {
+            axios.post('/api/cash/movement', {id_turn: this.turn.id, movement: this.newMovementItem}).then(response => {
+                if (response.data.statusCode === 200)
+                    this.turn.movements.push(this.newMovementItem)
                 this.newMovementItem = {}
+                this.showDialog = false
                 this.showAlert = true
                 this.alertTitle = response.data.status
                 this.alertContent = response.data.message
@@ -186,14 +203,15 @@ export default {
             this.showDialog = true
             this.newMovementItem.type = $type
         },
-        getTotalTurnCash() {
+        getTotalTurnCash(closeTurn) {
             axios.get('/api/cash/turn/cash').then(response => {
-                this.totalTurnCash = parseFloat(response.data)
+                this.totalTurnCash = response.data.payments ? parseFloat(response.data.payments) : 0
+                this.totalTurnMovements = response.data.movements
                 this.showCloseTurnDialog = true
             });
         },
         closeTurn() {
-            axios.put('/api/cash/turn/', { id_turn: this.turn.id, end_cash:  this.totalTurnCash - this.turnCorrection, correction: this.turnCorrection }).then(response => {
+            axios.put('/api/cash/turn/', { id_turn: this.turn.id, end_cash:  this.actualCash, correction: this.turnCorrection }).then(response => {
                 this.showCloseTurnDialog = false
                 this.showAlert = true
                 this.alertTitle = response.data.status
@@ -202,16 +220,26 @@ export default {
                     this.turn = null
             }); 
         },
+        closeDayCashRegister() {
+            axios.put('/api/cash/cash_register/', { id_turn: this.turn.id, end_cash:  this.actualCash - this.guardar, correction: this.turnCorrection, z: this.z, guardar: this.guardar }).then(response => {
+                this.showCloseTurnDialog = false
+                this.showAlert = true
+                this.alertTitle = response.data.status
+                this.alertContent = response.data.message
+                if (response.data.statusCode == 200) {
+                    this.turn = null
+                    this.cashRegister = null
+                }
+            }); 
+        },
         getSales(type) {
-            var total = 0
-
-            if (this.turn && this.turn.payments) {
-                this.turn.payments.forEach( item => {
-                    if (item[0].id_payment_method == type)
-                        total += item[0].total
-                })
+            if (this.turn && this.turn.payments && this.turn.payments[type]) {
+                return this.turn.payments[type]
             }
-            return total
+            return 0
+        },
+        setTurnCorrection() {
+            this.turnCorrection = - (this.totalTurnCash + this.totalIncomes - this.totalOutcomes - this.actualCash + this.turn.start_cash) 
         }
     },
     created() {

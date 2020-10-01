@@ -217,6 +217,9 @@
 				if (payment.method.name != "Tarjeta")
 					return payment.method.name
 
+				if (!payment.option)
+					return `${payment.method.name} ${payment.card.name}`
+
 				let plural = ''
 
 				if (payment.option.installments > 1) {
@@ -263,7 +266,13 @@
 				data.cashier = this.cashier.id
 				//TODO cambiar esto en futuro para agrupar items iguales
 				data.qty = this.items.length
-				data.items = this.items
+				data.items = this.items.map(item => ({
+					id: item.id,
+					qty: item.qty,
+					buy_price: item.buy_price,
+					sell_price: item.sell_price,
+					price: item.price
+				}))
 				data.orderDiscount = this.orderDiscount
 				data.subtotal = parseFloat(this.subtotal)
 				data.total = parseFloat(this.total)

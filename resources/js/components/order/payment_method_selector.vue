@@ -17,7 +17,12 @@
                     <option v-for="option in selectedCard.options" :key="'option-'+option.id" :value="option">{{ optionDesciption(option) }}</option>
                 </select>
             </div>
+            <div class="mt-3">
+                <label>Cupón</label>
+                <input @keydown.tab="disableTab($event, coupon)" ref="coupon" type="text" v-model.number="coupon"  @keydown.esc="$refs.option.focus()">
+            </div>
         </div>
+        
         <div class="mt-3">
             <label>Monto</label>
             <input @keydown.tab="checkPay($event)" ref="amount" type="number" v-model.number="amount" step="0.01">
@@ -32,6 +37,7 @@ export default {
             selected: null,
             selectedCard: null,
             selectedOption: null,
+            coupon: null,
             options: [],
             amount: this.roundFloat(this.amountToPay)
         }
@@ -82,16 +88,21 @@ export default {
 
             let amountToPay = this.selectedOption != null ? this.amountToPay * (1 + this.selectedOption.charge / 100) : this.amountToPay
             
+            var data = { method: { id: this.selected.id, name: this.selected.name }, amount: this.amount, coupon: this.coupon }
+            data.card = this.selectedCard ? { id: this.selectedCard.id, name: this.selectedCard.name } : null
+            data.option = this.selectedOption
+
             if (this.roundFloat(amountToPay) > this.roundFloat(parseFloat(this.amount))) {
-                this.$emit('update', { method: this.selected, card: this.selectedCard, option: this.selectedOption, amount: this.amount }, true )
+                this.$emit('update', data, true )
                 this.selected = null
                 this.selectedCard = null
                 this.selectedOption = null
+                this.coupon = null
                 this.amount = amountToPay - this.amount
                 this.$refs.method.focus()
             }
             else {
-                this.$emit('update', { method: this.selected, card: this.selectedCard, option: this.selectedOption, amount: this.amount }, false )
+                this.$emit('update', data, false )
             }
         },
         roundFloat(number) {

@@ -19,7 +19,7 @@ class CreateOrdersSeeder extends Seeder
         $new->save();
 
         $new_turn = new CashRegisterTurn();
-        $new_turn->id_cash_register = 4;
+        $new_turn->id_cash_register = $new->id;
         $new_turn->id_cashier = 4;
         $start_cash = CashRegisterTurn::latest()->value('end_cash');
         if ($start_cash == null)
@@ -27,11 +27,11 @@ class CreateOrdersSeeder extends Seeder
         $new_turn->start_cash = $start_cash;
         $new_turn->save();
 
-        for ($i = 0; $i < 1000; $i++) {
+        for ($i = 0; $i < 100; $i++) {
             try {
                 DB::beginTransaction();
                 
-                $qty = random_int(1, 40);
+                $qty = random_int(1, 10);
                 $subtotal = mt_rand(1000, 50000);
 
                 $order = Order::create([

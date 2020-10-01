@@ -34,11 +34,17 @@ Vue.component('stock-colors-list', require('./components/stock/stock_colors_list
 Vue.component('stock-brands-list', require('./components/stock/stock_brands_list.vue').default);
 Vue.component('stock-movements', require('./components/stock/stock_movements.vue').default);
 Vue.component('stock-movement-item', require('./components/stock/stock_movement_item.vue').default);
+Vue.component('stock-movement-detail', require('./components/stock/stock_movement_detail.vue').default);
+Vue.component('stock-label', require('./components/stock/stock_label.vue').default);
+Vue.component('stock-articles-list', require('./components/stock/stock_articles_list.vue').default);
+Vue.component('stock-reset', require('./components/stock/stock_reset.vue').default);
 
 // Utils
 Vue.component('sucursal-selector', require('./components/utils/sucursal_selector.vue').default);
 Vue.component('user-selector', require('./components/utils/user_selector.vue').default);
 
+Vue.component('order-list', require('./components/order/order_list.vue').default);
+Vue.component('order-detail', require('./components/order/order_detail.vue').default);
 Vue.component('order-discount', require('./components/order/order_discount.vue').default);
 Vue.component('new-order-form', require('./components/order/new_order_form.vue').default);
 Vue.component('new-order-row', require('./components/order/new_order_row.vue').default);
@@ -47,6 +53,9 @@ Vue.component('payment-method-selector', require('./components/order/payment_met
 Vue.component('new-item-description', require('./components/order/new_item_description.vue').default);
 
 Vue.component('cash', require('./components/cashRegister/cash.vue').default);
+Vue.component('marketplace-new-order', require('./components/marketplace/new_order.vue').default);
+Vue.component('marketplace-orders', require('./components/marketplace/orders.vue').default);
+Vue.component('marketplace-order-detail', require('./components/marketplace/order_detail.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to

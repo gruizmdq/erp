@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateOrderMarketplacesTable extends Migration
+class CreateOrderTiendanubesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,9 @@ class CreateOrderMarketplacesTable extends Migration
      */
     public function up()
     {
-        Schema::create('order_marketplaces', function (Blueprint $table) {
+        Schema::create('order_tiendanubes', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-
-            $table->softDeletes();
         });
     }
 
@@ -28,6 +26,6 @@ class CreateOrderMarketplacesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('order_marketplaces');
+        Schema::dropIfExists('order_tiendanubes');
     }
 }

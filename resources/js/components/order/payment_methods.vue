@@ -64,7 +64,7 @@ export default {
     },
     methods: {
         getMethods() {
-            axios.get('/api/order/get_payment_methods').then(response => {
+            axios.get('/api/order/payment_methods').then(response => {
                 this.methods = response.data;
             });
         },

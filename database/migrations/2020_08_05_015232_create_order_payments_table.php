@@ -19,6 +19,7 @@ class CreateOrderPaymentsTable extends Migration
             $table->unsignedBigInteger('id_payment_method');
             $table->unsignedBigInteger('id_payment_card')->nullable($value = true);
             $table->unsignedBigInteger('id_payment_option')->nullable($value = true);
+            $table->string('coupon');
             $table->float('total', 10, 2);
             
             $table->timestamps();

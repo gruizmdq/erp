@@ -45,7 +45,8 @@
         activePrompt: false,
         alert: false,
         alert_title: '',
-        alert_content: ''
+        alert_content: '',
+        id_article: this.article
       }
     },
     props: {
@@ -56,6 +57,16 @@
       selectedOption: {
         type: String,
         default: null
+      },
+      article: {
+        type: Number,
+        default: null
+      }
+    },
+    watch: {
+      article(newValue) {
+        this.id_article = newValue
+        this.getColors()
       }
     },
     methods: {
@@ -96,13 +107,16 @@
                 this.alert = true
             })
           }
+        },
+        getColors() {
+          axios.get('/api/stock/colors', { params: { id_article: this.id_article }}).then(response => {
+              this.items = response.data;
+              this.options = response.data
+          });
         }
     },
     mounted() {
-        axios.get('/api/stock/colors').then(response => {
-            this.items = response.data;
-            this.options = response.data
-        });
+      this.getColors();
     }
   }
 </script>

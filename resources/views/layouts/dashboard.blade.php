@@ -108,6 +108,12 @@
             Editar artículo</a></li>
             <li><a href="/stock/colors" class="w-100 p-1 waves-effect" tabindex="-1">
             Editar color</a></li>
+            <li><a href="/stock/label" class="w-100 p-1 waves-effect" tabindex="-1">
+            Imprimir Etiquetas</a></li>
+            <li><a href="/stock/movements" class="w-100 p-1 waves-effect" tabindex="-1">
+            Movimientos</a></li>
+            <li><a href="/stock/reset" class="w-100 p-1 waves-effect" tabindex="-1">
+            Ajustar Stock</a></li>
           </ul>
         </div>
         
@@ -124,6 +130,17 @@
         <a href="/cash" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
           <i class="fas fa-money-bill-alt mr-3"></i>Caja</a>
         @endif
+
+        <div class="list-group-item pb-0">
+          <a href="/marketplace" class="list-group-item-action waves-effect py-1" tabindex="-1">
+          <i class="fas fa-facebook mr-3"></i>Marketplace</a>
+          <ul style="list-style: none">
+            <li><a href="/marketplace" class="w-100 p-1 waves-effect" tabindex="-1">
+            Nueva venta</a></li>
+            <li><a href="/marketplace/orders" class="w-100 p-1 waves-effect" tabindex="-1">
+            Ver ventas</a></li>
+          </ul>
+        </div>
       </div>
 
     </div>

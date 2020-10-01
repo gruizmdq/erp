@@ -4,7 +4,7 @@
     <td scope="row">{{ item.code }}</td>
     <td scope="row">{{ item.color }}</td>
     <td scope="row">{{ item.number }}</td>
-    <td v-for="s in sucursals" :key="s.id + Math.random()" scope="col">{{ getStock(s) }}</td>
+    <td v-for="s in sucursals" :key="s.id + Math.random()" scope="col" :class="getBackgroundClass(s)">{{ getStock(s) }}</td>
     <td scope="col">{{ item.qty }}</td>
   </tr>
 </template>
@@ -28,7 +28,20 @@
           if (this.item.shoe_sucursal_item[i].id_sucursal == sucursal.id)
             return this.item.shoe_sucursal_item[i].stock
         return 0
-      }
+      },
+      getBackgroundClass(sucursal) {
+        for( var i = 0; i < this.item.shoe_sucursal_item.length; i ++) {
+          if (this.item.shoe_sucursal_item[i].id_sucursal == sucursal.id) {
+            if (this.item.shoe_sucursal_item[i].stock == 0)
+              return 'red text-white'
+            if (this.item.shoe_sucursal_item[i].stock < 3)
+              return 'orange'
+            if (this.item.shoe_sucursal_item[i].stock < 5)
+              return 'yellow'
+          }
+        }
+        return ''
+      },
     }
   }
 </script>

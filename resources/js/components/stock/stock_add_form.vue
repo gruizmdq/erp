@@ -30,6 +30,7 @@
                         <th scope="col">Nuevos</th>
                         <th scope="col">Precio Compra</th>
                         <th scope="col">Precio Venta</th>
+                        <th scope="col">Ganancia</th>
                         <th scope="col">Tienda Nube?</th>
                         <th scope="col">MarketPlace?</th>
                         </tr>
@@ -41,6 +42,7 @@
                             <td scope="col"><input min="0" type="number" v-model.number="new_stock_all" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
                             <td scope="col"><input v-model.number="new_buy_price_all" type="number" step="0.01" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
                             <td scope="col"><input v-model.number="new_sell_price_all" type="number" step="0.01" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
+                            <td scope="col"> - </td>
                             <td scope="col">
                                 <div class="custom-control custom-checkbox">
                                     <input type="checkbox" class="custom-control-input" v-model="tiendanube_all" id="tiendanube_all">
@@ -54,7 +56,7 @@
                                 </div>
                             </td>
                         </tr>
-                        <stock-item-row :stock="i.stock" :marketplace.sync="marketplace_all" :tiendanube.sync="tiendanube_all" :new_sell_price.sync="new_sell_price_all" :new_buy_price.sync="new_buy_price_all" :new_stock.sync="new_stock_all" v-for="i in detailItems" :key="i.number" :item.sync="i"> </stock-item-row>
+                        <stock-item-row :stock="i.stock" :marketplace.sync="marketplace_all" :tiendanube.sync="tiendanube_all" :new_sell_price.sync="new_sell_price_all" :new_buy_price.sync="new_buy_price_all" :new_stock.sync="new_stock_all" v-for="i in detailItems" :key="i.number" :item="i"> </stock-item-row>
                     </tbody>
                 </table>
 
@@ -66,6 +68,7 @@
                 <md-dialog-confirm
                 :md-active.sync="activeConfirmDialog"
                 md-title="¿Está seguro de confirmar el stock?"
+                :md-content="'Total de pares: '+getQtyStockToAdd"
                 md-confirm-text="Dale mecha"
                 md-cancel-text="Cancelar"
                 @md-confirm="confirmSubmit" />
@@ -99,6 +102,11 @@
                 alert_title: '',
                 alert_content: '',
 			}
+        },
+        computed: {
+            getQtyStockToAdd() {
+                return this.detailItems.reduce((a, b) => a + b.stock_to_add, 0)
+            }
         },
 		methods: {
             updatebrand: function(brand){

@@ -5,6 +5,7 @@
     <td><input required type="number" :id="'stock-aded-'+item.number" style="max-width: 100px" class="m-auto text-center form-control form-control-sm" placeholder=""  v-model.number="item.stock_to_add"></td>
     <td><input required step="0.01" type="number" :id="'buy-price-'+item.number" style="max-width: 100px" class="m-auto text-center form-control form-control-sm" v-model.number="item.buy_price" ></td>
     <td><input required step="0.01" type="number" :id="'sell-price-'+item.number" style="max-width: 100px" class="m-auto text-center form-control form-control-sm" v-model.number="item.sell_price"></td>
+    <td>{{ getProfit }}</td>
     <td>
         <div class="custom-control custom-checkbox">
             <input v-model="item.available_tiendanube" type="checkbox" class="custom-control-input" :id="'tiendaNube-'+item.number">
@@ -78,6 +79,11 @@
     computed: {
         background() {
           return this.item.barcode != undefined ? 'green' : ''
+        },
+        getProfit() {
+          if (this.item.sell_price && this.item.buy_price)
+            return (this.item.sell_price / this.item.buy_price * 100).toLocaleString(2) + " %"
+          return ""
         }
     }
   }

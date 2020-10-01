@@ -3,7 +3,7 @@
       <div v-if="options.length > 0" class="md-layout-item">
         <md-field class="white z-depth-1" >
             <label :for="label">{{ label }}</label>
-            <md-select :required="required" v-model="sucursal" :id="label" name="Sucursal">
+            <md-select :required="required" v-model="sucursal" :id="label" name="Sucursal" @md-selected="updateSucursal">
                 <md-option v-for="item in options" :value="item.id" :key="item.name">{{ item.name }}</md-option>
             </md-select>
         </md-field>
@@ -32,6 +32,11 @@
       label: {
           type: String,
           default: ''
+      }
+    },
+    methods: {
+      updateSucursal(value) {
+        this.$emit('updatesucursal', value)
       }
     }
   }

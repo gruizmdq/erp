@@ -17,6 +17,7 @@ class CreateShoeDetailsTable extends Migration
             $table->bigIncrements('id');
             $table->unsignedBigInteger('id_shoe');
             $table->unsignedBigInteger('id_color');
+            $table->unsignedBigInteger('id_color_second');
             $table->unsignedBigInteger('number');
             $table->string('barcode')->default($value = null)->unique();
             $table->float('buy_price', 10, 2)->nullable($value = false);
@@ -28,7 +29,8 @@ class CreateShoeDetailsTable extends Migration
 
             $table->foreign('id_shoe')->references('id')->on('shoes');
             $table->foreign('id_color')->references('id')->on('shoe_colors');
-            $table->unique(['id_shoe', 'id_color', 'number']);
+            $table->foreign('id_color_second')->references('id')->on('shoe_colors');
+            $table->unique(['id_shoe', 'id_color', 'id_color_second', 'number']);
 
             $table->softDeletes();
         });
