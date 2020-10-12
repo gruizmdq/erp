@@ -178,13 +178,14 @@
 				if (this.barcode != null || (this.items.length === 0 && this.newItemDescription == null) )
 					e.preventDefault()
 			}, 
-			updatePaymentMethod(payment, needOther) {
+			updatePaymentMethod(payment, needOther, nextFocus = true) {
 				if (needOther)
 					this.paymentMethods.push(payment)
 				else {
-					this.$refs.comments.focus()
 					this.paymentMethod = payment
 				}
+				if (nextFocus)
+					this.$refs.comments.focus()
 			},
 			updateOrderDiscount(value) {
 				this.orderDiscount = value

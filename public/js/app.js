@@ -3195,10 +3195,11 @@ __webpack_require__.r(__webpack_exports__);
       if (this.barcode != null || this.items.length === 0 && this.newItemDescription == null) e.preventDefault();
     },
     updatePaymentMethod: function updatePaymentMethod(payment, needOther) {
+      var nextFocus = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
       if (needOther) this.paymentMethods.push(payment);else {
-        this.$refs.comments.focus();
         this.paymentMethod = payment;
       }
+      if (nextFocus) this.$refs.comments.focus();
     },
     updateOrderDiscount: function updateOrderDiscount(value) {
       this.orderDiscount = value;
@@ -3830,6 +3831,7 @@ __webpack_require__.r(__webpack_exports__);
       if (param == null) e.preventDefault();
     },
     checkPay: function checkPay(e) {
+      var fromOptionSelection = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       e.preventDefault();
       var amountToPay = this.selectedOption != null ? this.amountToPay * (1 + this.selectedOption.charge / 100) : this.amountToPay;
       var data = {
@@ -3846,15 +3848,15 @@ __webpack_require__.r(__webpack_exports__);
       } : null;
       data.option = this.selectedOption;
 
-      if (this.roundFloat(amountToPay) > this.roundFloat(parseFloat(this.amount))) {
-        this.$emit('update', data, true);
+      if (!fromOptionSelection && this.roundFloat(amountToPay) > this.roundFloat(parseFloat(this.amount))) {
+        this.$emit('update', data, true, false);
         this.selected = null;
         this.selectedCard = null;
         this.selectedOption = null;
         this.coupon = null;
         this.amount = amountToPay - this.amount;
         this.$refs.method.focus();
-      } else {
+      } else if (fromOptionSelection) this.$emit('update', data, false, false);else {
         this.$emit('update', data, false);
       }
     },
@@ -46532,6 +46534,24 @@ var render = function() {
                     ref: "option",
                     staticClass: "custom-select",
                     on: {
+                      change: [
+                        function($event) {
+                          var $$selectedVal = Array.prototype.filter
+                            .call($event.target.options, function(o) {
+                              return o.selected
+                            })
+                            .map(function(o) {
+                              var val = "_value" in o ? o._value : o.value
+                              return val
+                            })
+                          _vm.selectedOption = $event.target.multiple
+                            ? $$selectedVal
+                            : $$selectedVal[0]
+                        },
+                        function($event) {
+                          return _vm.checkPay($event, true)
+                        }
+                      ],
                       keydown: [
                         function($event) {
                           if (
@@ -46554,20 +46574,7 @@ var render = function() {
                           }
                           return _vm.$refs.card.focus()
                         }
-                      ],
-                      change: function($event) {
-                        var $$selectedVal = Array.prototype.filter
-                          .call($event.target.options, function(o) {
-                            return o.selected
-                          })
-                          .map(function(o) {
-                            var val = "_value" in o ? o._value : o.value
-                            return val
-                          })
-                        _vm.selectedOption = $event.target.multiple
-                          ? $$selectedVal
-                          : $$selectedVal[0]
-                      }
+                      ]
                     }
                   },
                   _vm._l(_vm.selectedCard.options, function(option) {

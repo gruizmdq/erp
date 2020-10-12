@@ -42,6 +42,17 @@
                         </div>
 
                         <div class="form-group row">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="sucursal" id="sucursal1" value="1">
+                                <label class="form-check-label" for="sucursal1">START CALZADOS</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="sucursal" id="sucursal2" value="2">
+                                <label class="form-check-label" for="sucursal2">RUFINA</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
                             <div class="col-md-6 offset-md-4">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>

@@ -13,7 +13,7 @@
             </div>
             <div class="mt-3" v-if="selectedCard && selectedCard.options != null">
                 <label>Cuotas</label>
-                <select ref="option" @keydown.tab="disableTab($event, selectedOption)" @keydown.esc="$refs.card.focus()" v-model="selectedOption" class="custom-select">
+                <select ref="option" @change="checkPay($event, true)" @keydown.tab="disableTab($event, selectedOption)" @keydown.esc="$refs.card.focus()" v-model="selectedOption" class="custom-select">
                     <option v-for="option in selectedCard.options" :key="'option-'+option.id" :value="option">{{ optionDesciption(option) }}</option>
                 </select>
             </div>
@@ -83,7 +83,7 @@ export default {
             if (param == null)
                 e.preventDefault()
         },
-        checkPay(e) {
+        checkPay(e, fromOptionSelection = false) {
             e.preventDefault()
 
             let amountToPay = this.selectedOption != null ? this.amountToPay * (1 + this.selectedOption.charge / 100) : this.amountToPay
@@ -92,8 +92,8 @@ export default {
             data.card = this.selectedCard ? { id: this.selectedCard.id, name: this.selectedCard.name } : null
             data.option = this.selectedOption
 
-            if (this.roundFloat(amountToPay) > this.roundFloat(parseFloat(this.amount))) {
-                this.$emit('update', data, true )
+            if (!fromOptionSelection && this.roundFloat(amountToPay) > this.roundFloat(parseFloat(this.amount))) {
+                this.$emit('update', data, true, false)
                 this.selected = null
                 this.selectedCard = null
                 this.selectedOption = null
@@ -101,8 +101,10 @@ export default {
                 this.amount = amountToPay - this.amount
                 this.$refs.method.focus()
             }
+            else if(fromOptionSelection)
+                this.$emit('update', data, false, false)
             else {
-                this.$emit('update', data, false )
+                this.$emit('update', data, false)
             }
         },
         roundFloat(number) {

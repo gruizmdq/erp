@@ -10,6 +10,7 @@ Auth::routes(['register' => false]);
 Route::get('/pdf', 'PdfController@getIndex')->middleware('auth');
 
 Route::get('/', 'HomeController@index')->name('home')->middleware('auth');
+Route::get('/home', 'HomeController@index')->name('home')->middleware('auth');
 
 /*************************/
 /***** ORDERS ROUTES ****/
@@ -32,7 +33,7 @@ Route::get('/order/{id}', function (Request $request) {
 /***********************/
 Route::get('/marketplace', function (Request $request) {
     return view('marketplace.home');
-})->middleware('auth');
+})->name('marketplace')->middleware('auth');
 Route::get('/marketplace/orders', function (Request $request) {
     return view('marketplace.orders');
 })->middleware('auth');
@@ -49,7 +50,7 @@ Route::get('/sell', 'OrderController@index')->middleware('auth');
 /***** STOCK ROUTES *****/
 /***********************/
 
-Route::get('/stock', 'StockController@index')->name('stock.home')->middleware('auth');
+Route::get('/stock', 'StockController@index')->name('stock')->middleware('auth');
 Route::get('/stock/movements', function (Request $request) {
     return view('stock.movements');
 })->middleware('auth');
@@ -84,4 +85,4 @@ Route::get('/stock/reset/unprocessed', 'PdfController@getStockResetUnProcessed')
 /***********************/
 Route::get('/cash', function (Request $request) {    
     return view('cash.home');
-})->middleware('auth');
+})->name('cash')->middleware('auth');

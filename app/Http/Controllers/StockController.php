@@ -27,6 +27,11 @@ class StockController extends Controller{
     const STATUS_ERROR_TITLE = "Ups. Algo salió mal";
     const STATUS_SUCCESS_TITLE = "¡Bien papá!";
     
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+    
     public function index(Request $request) {
         $request->user()->authorizeRoles(['admin']);
         return view('stock.home');

@@ -49,14 +49,15 @@ class LoginController extends Controller
             'username' => 'required',
             'password' => 'required',
             'lat' => 'required',
-            'long' => 'required'
+            'long' => 'required',
+            'sucursal' => 'required'
         ]);
   
         if(auth()->attempt(['username' => $input['username'], 'password' => $input['password']]))
         {   
             //TODO hacer bien lo de las sucursal
             return redirect()->route('home')->cookie(
-                'id_sucursal', 1, 1440
+                'id_sucursal', $input['sucursal'], 1440
             );
         }
         else{
