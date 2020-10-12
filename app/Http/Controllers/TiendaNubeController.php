@@ -7,9 +7,21 @@ use Illuminate\Http\Request;
 
 class TiendaNubeController extends Controller
 {
-    
-    public function index(Request $request) {
-        Log::info(config('tiendaNube.api_key'));
-        return 'hola';
+    const LOG_LABEL = "[TIENDANUBE API]";
+
+    public function order_created(Request $request) {
+        Log::info(self::LOG_LABEL. " ". $request->getContent());
+    }
+
+    public function order_paid(Request $request) {
+        Log::info(self::LOG_LABEL. " ". $request->getContent());
+    }
+
+    public function order_updated(Request $request) {
+        Log::info(self::LOG_LABEL. " ". $request->getContent());
+    }
+
+    public function order_cancelled(Request $request) {
+        Log::info(self::LOG_LABEL. " ". $request->getContent());
     }
 }
