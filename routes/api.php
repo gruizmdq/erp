@@ -14,7 +14,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::post('/tiendanube/order/created', 'TiendaNubeController@order_created');
 Route::post('/tiendanube/order/updated', 'TiendaNubeController@order_updated');
 Route::post('/tiendanube/order/cancelled', 'TiendaNubeController@order_cancelled');
-Route::post('/tiendanube/order/paid', 'TiendaNubeController@order_pais');
+Route::post('/tiendanube/order/paid', 'TiendaNubeController@order_paid');
 
 
 Route::middleware('auth:api')->post('/pdf/generate','PdfController@generatePdf');
