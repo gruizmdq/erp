@@ -15,6 +15,7 @@ class CreateTiendanubeUpdateRunsTable extends Migration
     {
         Schema::create('tiendanube_update_runs', function (Blueprint $table) {
             $table->id();
+            $table->string('action');
             $table->timestamps();
         });
     }

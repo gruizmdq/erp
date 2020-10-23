@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+ini_set('max_execution_time', 360);
 
 use Log;
 use Illuminate\Http\Request;
@@ -9,11 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 use App\ShoeDetail;
 use App\ShoeSucursalItem;
+use App\Shoe;
 use App\Sucursal;
 use App\OrderTiendanube;
 use App\OrderItem;
 use App\Order;
 use App\TiendanubeError;
+use App\MappingTiendanube;
+use App\TiendanubeUpdateRun;
 
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -24,6 +28,7 @@ class TiendaNubeController extends Controller
     const TIENDA_NUBE_API_URL = "https://api.tiendanube.com/v1/1153537/";
     const TIENDA_NUBE_USER_ID = 9;
     const ORDER_STATUS = ['created' => 0, 'fulfilled' => 1, 'cancelled' => 2];
+    const TIENDANUBE_START_STORE_ID = '1153537';
 
     public function order_created(Request $request) {
         Log::info(self::LOG_LABEL. " New order created: ". $request->getContent());
@@ -254,7 +259,7 @@ class TiendaNubeController extends Controller
         }
     }
 
-    public function sendRequest($url) {
+    private function sendRequest($url, $retries = 3, $timeout = 10) {
         Log::info(self::LOG_LABEL." Sending request to get data");
         $request = Http::withHeaders([
             'Authentication' => 'bearer '.\Config('tiendaNube.api_key'),
@@ -262,23 +267,217 @@ class TiendaNubeController extends Controller
         ->withOptions([
             'synchronous' => true,
         ])
-        ->retry(3, 100)
-        ->timeout(3);      
-
+        ->retry($retries, 100)
+        ->timeout($timeout);      
+        
         $response = $request->get(self::TIENDA_NUBE_API_URL.$url);
+            
         Log::info(self::LOG_LABEL." Response received");
 
         return $response;
     }
 
+    public function borrar(Request $request) {
+        $ids_brands = [1, 44, 5, 45, 46, 47, 69];
+        $brand = 5;
+        $request = Http::withHeaders([
+            'Authentication' => 'bearer '.\Config('tiendaNube.api_key'),
+        ])
+        ->withOptions([
+            'synchronous' => true,
+        ])
+        ->retry(3, 100)
+        ->timeout(10);      
+
+        $shoes = Shoe::select('shoes.id as id', 'shoe_brands.name as brand', 'shoes.code as code')
+                ->join("shoe_brands", "shoe_brands.id", 'shoes.id_brand')
+                ->where('shoes.id_brand', $brand)
+                ->get();
+
+        foreach ($shoes as $shoe) {
+            $data = [];
+            $colors = ShoeDetail::select('shoe_colors.name as color', 'shoe_colors.id as id')
+                        ->join('shoe_colors', 'shoe_details.id_color', 'shoe_colors.id')
+                        ->where('shoe_details.id_shoe', $shoe->id)
+                        ->distinct()
+                        ->get();
+
+            $shoesDetails = ShoeDetail::select('shoe_colors.name as color', 'shoe_details.number as number', 'shoe_details.sell_price as price', 'shoe_details.id as sku' )
+                    ->join('shoe_colors', 'shoe_details.id_color', 'shoe_colors.id')
+                    ->where('shoe_details.id_shoe', $shoe->id)
+                    ->where('shoe_details.id', '>', 85000)
+                    ->get();
+
+            foreach($colors as $color) {
+                $data[$color->color] = ['name' => $shoe->brand.' '.$shoe->code, 
+                'attributes' => [['es' => 'Talle'], ['es' => 'Color']],
+                'published' => false,
+                'variants' => []
+                ];
+            }
+            foreach($shoesDetails as $detail){
+                $new = ['price' => $detail->price,
+                    'stock' => 0,
+                    'weight' => '0.500',
+                    'width' => '15.00',
+                    'height' => '8.00',
+                    'depth' => '25.00',
+                    'sku' =>  $detail->sku,
+                    'values' => [
+                            ['es' => strval($detail->number)],
+                            ['es' => $detail->color]
+                        ]
+                    ];
+                $data[$detail->color]['variants'][] = $new;
+            }
+            Log::info(self::LOG_LABEL." {$shoe->brand} {$shoe->code}");
+
+            foreach($data as $d) {
+                if (count($d['variants'])) {
+                    Log::info(self::LOG_LABEL." Sending requests color: ". $d['variants'][0]['values'][1]['es']);
+                    $response = $request->post(self::TIENDA_NUBE_API_URL.'products', $d);
+                }
+            }
+        }
+        
+        
+
+    }
+
+    public function map_tiendanube_products (Request $request) {
+        Log::info(self::LOG_LABEL." New request to map tiendanube products");
+
+        $mapped = 0;
+        $errors = 0;
+        $success = 0;
+        $statusCode = 200;
+        $i = 0;
+
+        while($statusCode == 200){
+            $i += 1;
+            try {
+                $response = $this->sendRequest("products?page=".$i."&per_page=200&fields=variants,id");
+
+            
+                DB::beginTransaction();
+                $total = count($response->json());
+                
+                foreach($response->json() as $product) {
+                    foreach($product['variants'] as $item) {
+                        try {
+                            $id = $item['id'];
+                            $sku = $item['sku'];
+                            if ($sku == null)
+                                continue;
+
+                            $is_mapped = MappingTiendanube::where('id_tiendanube', $id)->first();
+                            if ($is_mapped) {
+                                $mapped += 1;
+                                continue;
+                            }
+                            
+                            $mapping = new MappingTiendanube();
+                            $mapping->id_tiendanube = $id;
+                            $mapping->id_tiendanube_product = $product['id'];
+                            $mapping->id_shoe_detail = $sku;
+                            $mapping->id_tiendanube_store = self::TIENDANUBE_START_STORE_ID;
+                            $mapping->save();
+                            $success += 1;
+                        }
+                        catch(Exception $e) {
+                            $errors += 1;
+                        }
+                    }
+                }
+                DB::commit();
+                $i++;
+                if ($total < 200)
+                    $i = 0;
+            }
+            catch (Exception $e) {
+                $statusCode = 404;
+            }
+        }
+        Log::info(self::LOG_LABEL." Procces endend. {$success} product/s mapped and {$errors} errors. {$mapped} were already mapped.");
+    }
+
     public function update_stock_tiendanube (Request $request) {
-        // hacer algo en la base de shoe detail para detectar si ya existe en tn
-        // o hacer una tabla relacionando tiendanube / start Analizar
 
-        $response = $this->sendRequest("products");
+        Log::info(self::LOG_LABEL." New request to update stock in tiendanube");
 
-        Log::info($response);
+        $id_store = self::TIENDANUBE_START_STORE_ID;
+        $last_update = TiendanubeUpdateRun::where('action', 'update')->latest('created_at')->first();
 
+        Log::info(self::LOG_LABEL." Updating mapping products...");
+        
+        $shoe_details = ShoeDetail::select('shoe_details.id as sku', 'shoe_details.stock', 'mapping_tiendanubes.id_tiendanube_product', 'mapping_tiendanubes.id_tiendanube')
+                    ->where('shoe_details.updated_at', '>', $last_update->created_at)
+                    ->where('mapping_tiendanubes.id_tiendanube_store', $id_store)
+                    ->join('mapping_tiendanubes', 'shoe_details.id', 'mapping_tiendanubes.id_shoe_detail')
+                    ->get();
+                    Log::info($shoe_details);
+        
+        Log::info(self::LOG_LABEL." Products to update: ".count($shoe_details));
+
+        foreach ($shoe_details as $item) {
+            try {
+                $request = $this->createRequest();
+                $request->put(self::TIENDA_NUBE_API_URL.'products/'.$item->id_tiendanube_product.'/variants/'.$item->id_tiendanube,[
+                    'stock' => $item->stock
+                ]);
+            }
+            catch (Exception $e) {
+                Log::error(self::LOG_LABEL." ERROR. Error updating SKU { $item->sku }.");
+                Log::error($e);
+            }
+            
+        }
+        Log::info(self::LOG_LABEL." Updating mapping product finished.");
+        $new_run = new TiendanubeUpdateRun();
+        $new_run->action = 'update';
+        $new_run->save();
+    }
+
+    public function create_product_tiendanube (Request $request) {
+
+        Log::info(self::LOG_LABEL." New request to create products in tiendanube");
+
+        $id_store = self::TIENDANUBE_START_STORE_ID;
+        $last_update = TiendanubeUpdateRun::where('action', 'create')->latest('created_at')->first();
+
+        try {
+            Log::info(self::LOG_LABEL." Creating new products...");
+
+            $shoe_details = ShoeDetail::select('shoe_details.id as sku', 'shoe_details.stock')
+                        ->where('shoe_details.updated_at', '>', $last_update->created_at)
+                        ->whereNotExists( function ($query) use ($id_store) {
+                            $query->select(DB::raw(1))
+                            ->from('mapping_tiendanubes')
+                            ->whereRaw('shoe_details.id = mapping_tiendanubes.id_shoe_detail')
+                            ->where('mapping_tiendanubes.id_tiendanube_store', $id_store);
+                        })
+                        ->get();
+
+            Log::info(self::LOG_LABEL." Products to create: ".count($shoe_details));
+
+
+        }
+        catch (Exception $e) {
+            Log::error($e);
+        }
+    }
+
+    private function createRequest($retries = 3, $timeout = 10) {
+        $request = Http::withHeaders([
+            'Authentication' => 'bearer '.\Config('tiendaNube.api_key'),
+        ])
+        ->withOptions([
+            'synchronous' => true,
+        ])
+        ->retry($retries, 100)
+        ->timeout($timeout);      
+        
+        return $request;
     }
 
 }

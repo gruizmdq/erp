@@ -50,7 +50,9 @@ Route::get('/sell', 'OrderController@index')->middleware('auth');
 /***** STOCK ROUTES *****/
 /***********************/
 
-Route::get('/stock', 'StockController@index')->name('stock')->middleware('auth');
+Route::get('/stock', function (Request $request) {
+    return view('stock.home');
+})->middleware('auth');
 Route::get('/stock/movements', function (Request $request) {
     return view('stock.movements');
 })->middleware('auth');

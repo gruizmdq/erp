@@ -17,11 +17,14 @@ class CreateMappingTiendanubesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('id_shoe_detail');
             $table->string('id_tiendanube');
-            $talbe->unsignedSmallInteger('id_tiendanube_store');
+            $table->string('id_tiendanube_product');
+            $table->string('id_tiendanube_store');
 
             $table->timestamps();
             $table->foreign('id_shoe_detail')->references('id')->on('shoe_details');
-
+            $table->unique(["id_shoe_detail", "id_tiendanube_store"]);
+            $table->unique(["id_tiendanube", "id_tiendanube_store"]);
+            $table->unique(["id_tiendanube_product", "id_tiendanube_store"]);
         });
     }
 

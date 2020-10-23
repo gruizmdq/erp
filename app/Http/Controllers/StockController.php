@@ -31,11 +31,6 @@ class StockController extends Controller{
     {
         $this->middleware('auth:api');
     }
-    
-    public function index(Request $request) {
-        $request->user()->authorizeRoles(['admin']);
-        return view('stock.home');
-    }
 
     public function get_brands (Request $request) {
         $request->user()->authorizeRoles(['admin', 'seller']);
@@ -370,6 +365,13 @@ class StockController extends Controller{
                     $sucursal_item->stock = $item['stock_to_add'];
                     $sucursal_item->id_shoe_detail = $record->id;
                     $sucursal_item->id_sucursal = 1;
+
+                    //TODO: Hacer dinámico esto, es una verga así
+                    $sucursal_rufina = new ShoeSucursalItem();
+                    $sucursal_rufina->stock = 0;
+                    $sucursal_rufina->id_shoe_detail = $item['stock_to_add'];
+                    $sucursal_rufina->id_sucursal = 2;
+                    $sucursal_rufina->save();
                 }
                 else {
                     $sucursal_item->stock += $item['stock_to_add'];  
