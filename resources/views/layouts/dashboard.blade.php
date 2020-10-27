@@ -51,7 +51,7 @@
           </ul>
         </div>
         
-        <a href="#" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
+        <a href="/order" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
           <i class="fas fa-table mr-3"></i>Ventas</a>
         <a href="#" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
           <i class="fas fa-map mr-3"></i>Vendedores</a>

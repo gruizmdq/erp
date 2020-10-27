@@ -279,7 +279,7 @@ class TiendaNubeController extends Controller
 
     public function borrar(Request $request) {
         $ids_brands = [1, 44, 5, 45, 46, 47, 69];
-        $brand = 5;
+        $brand = 44;
         $request = Http::withHeaders([
             'Authentication' => 'bearer '.\Config('tiendaNube.api_key'),
         ])
@@ -305,7 +305,7 @@ class TiendaNubeController extends Controller
             $shoesDetails = ShoeDetail::select('shoe_colors.name as color', 'shoe_details.number as number', 'shoe_details.sell_price as price', 'shoe_details.id as sku' )
                     ->join('shoe_colors', 'shoe_details.id_color', 'shoe_colors.id')
                     ->where('shoe_details.id_shoe', $shoe->id)
-                    ->where('shoe_details.id', '>', 85000)
+                    ->where('shoe_details.id', '<', 85000)
                     ->get();
 
             foreach($colors as $color) {

@@ -96,7 +96,7 @@ class StockController extends Controller{
     }
 
     public function get_articles (Request $request) {
-        $request->user()->authorizeRoles(['admin']);
+        $request->user()->authorizeRoles(['admin', 'seller', 'cashier']);
 
         $query = $request->input('query');
         $articles = Shoe::where('code','like','%'.$query.'%')
@@ -334,6 +334,7 @@ class StockController extends Controller{
 
                     $record  = ShoeDetail::create($item);
                     $record->barcode = str_pad(ShoeDetail::max('id'), 12, '0', STR_PAD_LEFT);
+                    Log::info($record);
                 }
                 //UPDATE
                 else {
@@ -369,7 +370,7 @@ class StockController extends Controller{
                     //TODO: Hacer dinámico esto, es una verga así
                     $sucursal_rufina = new ShoeSucursalItem();
                     $sucursal_rufina->stock = 0;
-                    $sucursal_rufina->id_shoe_detail = $item['stock_to_add'];
+                    $sucursal_rufina->id_shoe_detail = $record->id;
                     $sucursal_rufina->id_sucursal = 2;
                     $sucursal_rufina->save();
                 }

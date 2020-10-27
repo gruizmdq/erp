@@ -4147,7 +4147,8 @@ __webpack_require__.r(__webpack_exports__);
         brand_name: this.brand.name,
         code: this.article.code
       }).then(function (response) {
-        console.log('cope');
+        console.log(response.data);
+        window.open(response.data.url, '_blank');
       });
     },
     submitForm: function submitForm() {
@@ -5368,7 +5369,8 @@ __webpack_require__.r(__webpack_exports__);
       qty: 0,
       alertActive: false,
       alert_title: null,
-      alert_content: null
+      alert_content: null,
+      url: null
     };
   },
   methods: {
@@ -5405,10 +5407,12 @@ __webpack_require__.r(__webpack_exports__);
         _this2.alert_title = response.data.status;
         _this2.alert_content = response.data.message;
         _this2.alertActive = true;
+        _this2.url = response.data.url;
       });
     },
-    //TODO HACER API PYTHon
-    printLabel: function printLabel() {}
+    printLabel: function printLabel() {
+      window.open("/" + this.url, '_blank');
+    }
   }
 });
 
@@ -49212,14 +49216,16 @@ var render = function() {
         ])
       ]),
       _vm._v(" "),
-      _c(
-        "button",
-        {
-          staticClass: "btn btn-sm btn-primary text-center",
-          on: { click: _vm.generateLabel }
-        },
-        [_vm._v("Imprimir")]
-      ),
+      _vm.item
+        ? _c(
+            "button",
+            {
+              staticClass: "btn btn-sm btn-primary text-center",
+              on: { click: _vm.generateLabel }
+            },
+            [_vm._v("Imprimir")]
+          )
+        : _vm._e(),
       _vm._v(" "),
       _c("md-dialog-confirm", {
         attrs: {

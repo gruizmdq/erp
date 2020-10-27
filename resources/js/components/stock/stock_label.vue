@@ -32,7 +32,7 @@
                 <input type="number" v-model="qty">
             </div>
         </div>
-        <button class="btn btn-sm btn-primary text-center" @click="generateLabel">Imprimir</button>
+        <button v-if="item" class="btn btn-sm btn-primary text-center" @click="generateLabel">Imprimir</button>
 
         <md-dialog-confirm
             :md-active.sync="alertActive"
@@ -56,6 +56,8 @@ export default {
             alertActive: false,
             alert_title: null,
             alert_content: null,
+
+            url: null,
         }
     },
     methods: {
@@ -87,11 +89,11 @@ export default {
                     this.alert_title = response.data.status
                     this.alert_content = response.data.message
                     this.alertActive = true
+                    this.url = response.data.url
                 });
         },
-        //TODO HACER API PYTHon
         printLabel() {
-
+            window.open("/"+this.url, '_blank');
         }
     }
 }

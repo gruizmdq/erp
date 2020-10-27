@@ -137,7 +137,8 @@
                                                     brand_name: this.brand.name,
                                                     code: this.article.code })
                 .then(response => {
-                    console.log('cope')
+                    console.log(response.data)
+                    window.open(response.data.url, '_blank');
                 });
             },
             submitForm(){

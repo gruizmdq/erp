@@ -16,7 +16,7 @@ Route::post('/tiendanube/order/fullfilled', 'TiendaNubeController@order_fulfille
 Route::post('/tiendanube/order/cancelled', 'TiendaNubeController@order_cancelled');
 Route::post('/tiendanube/products/update', 'TiendaNubeController@update_stock_tiendanube');
 Route::post('/tiendanube/products/map', 'TiendaNubeController@map_tiendanube_products');
-Route::middleware('auth:api')->post('/tiendanube/borrar', 'TiendaNubeController@borrar');
+Route::post('/tiendanube/borrar', 'TiendaNubeController@borrar');
 
 Route::middleware('auth:api')->post('/pdf/generate','PdfController@generatePdf');
 

@@ -64,7 +64,7 @@ class PdfController extends Controller
         $mpdf->SetDisplayMode('fullpage');
         $mpdf->Output($namefile,\Mpdf\Output\Destination::FILE);
 
-        return response()->json(["status" => $status, "message" => $message, 'statusCode' => $statusCode]);
+        return response()->json(["url" => $namefile, "status" => $status, "message" => $message, 'statusCode' => $statusCode]);
     }
 
     public function printMovement(Request $request, $id) {
