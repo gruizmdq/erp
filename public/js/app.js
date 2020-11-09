@@ -2005,6 +2005,14 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "CashComponent",
   data: function data() {
@@ -2012,6 +2020,7 @@ __webpack_require__.r(__webpack_exports__);
       EFECTIVO: 1,
       CARD: 2,
       CUENTA_CORRIENTE: 3,
+      sucursal: null,
       cashRegister: null,
       turn: null,
       showAlert: false,
@@ -2067,7 +2076,7 @@ __webpack_require__.r(__webpack_exports__);
       var _this = this;
 
       axios.get('/api/cash/cash_register').then(function (response) {
-        console.log(response.data);
+        _this.sucursal = response.data.sucursal;
         if (response.data.cash_register) _this.cashRegister = response.data.cash_register;
         if (response.data.turn) _this.turn = response.data.turn;
       });
@@ -6446,9 +6455,9 @@ __webpack_require__.r(__webpack_exports__);
   name: 'UserSelector',
   data: function data() {
     return {
-      user: '',
       options: [],
-      search: ''
+      search: '',
+      user: this.actualUser
     };
   },
   props: {
@@ -6463,6 +6472,19 @@ __webpack_require__.r(__webpack_exports__);
     role: {
       type: String,
       "default": ''
+    },
+    actualUser: {
+      type: Object,
+      "default": null
+    }
+  },
+  watch: {
+    actualUser: function actualUser(newValue) {
+      this.user = newValue;
+
+      if (newValue != null) {
+        this.search = '';
+      }
     }
   },
   methods: {
@@ -6490,8 +6512,9 @@ __webpack_require__.r(__webpack_exports__);
       var found = false;
       this.options.forEach(function (user) {
         if (user.id == _this2.search) {
-          _this2.user = user.name;
+          _this2.username = user.name;
           found = true;
+          _this2.user = user;
 
           _this2.updateUser(user);
 
@@ -6500,7 +6523,7 @@ __webpack_require__.r(__webpack_exports__);
       });
 
       if (!found) {
-        this.user = '';
+        this.user = null;
         this.updateUser(null);
       }
     }
@@ -43120,6 +43143,22 @@ var render = function() {
       _vm._v(" "),
       _vm.cashRegister && _vm.turn
         ? _c("div", [
+            _c("div", { staticClass: "card mb-4 wow fadeIn" }, [
+              _c(
+                "div",
+                { staticClass: "card-body d-sm-flex justify-content-between" },
+                [
+                  _c("h4", { staticClass: "mb-2 mb-sm-0 pt-1" }, [
+                    _c("a", [_vm._v("Sucursal")]),
+                    _vm._v(" "),
+                    _vm.sucursal
+                      ? _c("span", [_vm._v("/ " + _vm._s(_vm.sucursal.name))])
+                      : _vm._e()
+                  ])
+                ]
+              )
+            ]),
+            _vm._v(" "),
             _c("div", { staticClass: "row" }, [
               _c("div", { staticClass: "col-md-3" }, [
                 _c("div", { staticClass: "card p-3" }, [
@@ -45250,13 +45289,37 @@ var render = function() {
                 ]),
                 _vm._v(" "),
                 _c("user-selector", {
-                  attrs: { label: "Vendedor", role: "seller" },
-                  on: { update: _vm.updateSeller }
+                  attrs: {
+                    label: "Vendedor",
+                    role: "seller",
+                    actualUser: _vm.seller
+                  },
+                  on: {
+                    update: _vm.updateSeller,
+                    "update:actualUser": function($event) {
+                      _vm.seller = $event
+                    },
+                    "update:actual-user": function($event) {
+                      _vm.seller = $event
+                    }
+                  }
                 }),
                 _vm._v(" "),
                 _c("user-selector", {
-                  attrs: { label: "Cajero", role: "cashier" },
-                  on: { update: _vm.updateCashier }
+                  attrs: {
+                    label: "Cajero",
+                    role: "cashier",
+                    actualUser: _vm.cashier
+                  },
+                  on: {
+                    update: _vm.updateCashier,
+                    "update:actualUser": function($event) {
+                      _vm.cashier = $event
+                    },
+                    "update:actual-user": function($event) {
+                      _vm.cashier = $event
+                    }
+                  }
                 })
               ],
               1
@@ -46281,46 +46344,49 @@ var render = function() {
       _vm._v(" "),
       _vm.items && _vm.items.length > 0
         ? _c("div", { staticClass: "navigation" }, [
-            _c("ul", [
-              _c("li", [
+            _c("ul", { staticClass: "mt-2 pagination pg-blue" }, [
+              _c("li", { staticClass: "white page-item" }, [
                 _c(
                   "a",
                   {
+                    staticClass: "page-link",
                     on: {
-                      click: function($event) {
-                        return _vm.getData(_vm.prev_page)
+                      getData: function($event) {
+                        return _vm.getOrders(_vm.prev_page)
                       }
                     }
                   },
-                  [_vm._v("Previous")]
+                  [_vm._v("Anterior")]
                 )
               ]),
               _vm._v(" "),
-              _c("li", [
+              _c("li", { staticClass: "white page-item" }, [
                 _c(
                   "a",
                   {
+                    staticClass: "page-link",
                     on: {
-                      click: function($event) {
-                        return _vm.getData(_vm.next_page)
+                      getData: function($event) {
+                        return _vm.getOrders(_vm.next_page)
                       }
                     }
                   },
-                  [_vm._v("Next")]
+                  [_vm._v("Siguiente")]
                 )
               ]),
               _vm._v(" "),
-              _c("li", [
+              _c("li", { staticClass: "white page-item" }, [
                 _c(
                   "a",
                   {
+                    staticClass: "page-link",
                     on: {
-                      click: function($event) {
-                        return _vm.getData(_vm.last_page)
+                      getData: function($event) {
+                        return _vm.getOrders(_vm.last_page)
                       }
                     }
                   },
-                  [_vm._v("Last page")]
+                  [_vm._v("Última página")]
                 )
               ])
             ])
@@ -50804,7 +50870,11 @@ var render = function() {
         })
       ]),
       _vm._v(" "),
-      _c("li", [_c("span", [_vm._v(_vm._s(_vm.user.toUpperCase()))])])
+      _c("li", [
+        _vm.user
+          ? _c("span", [_vm._v(_vm._s(_vm.user.name.toUpperCase()))])
+          : _vm._e()
+      ])
     ])
   ])
 }

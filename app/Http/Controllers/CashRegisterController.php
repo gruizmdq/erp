@@ -15,6 +15,7 @@ use App\CashRegisterMovement;
 use App\OrderPaymentMethod;
 use App\OrderPayment;
 use App\OrderSucursal;
+use App\Sucursal;
 
 use Log;
 
@@ -26,6 +27,10 @@ class CashRegisterController extends Controller
 
     public function get_cash_register(Request $request) {
         $request->user()->authorizeRoles(['admin', 'cashier']);
+
+        //TODO Error handling
+        $sucursal = Sucursal::findOrFail($this->get_cookie('id_sucursal'));
+
         if ($request->input("id", null)) {
             $cash_register = CashRegister::find($request->input('id'));
             $turn = CashRegisterTurn::where([
@@ -34,7 +39,7 @@ class CashRegisterController extends Controller
                                             ])->first();
         }
         else {
-            $cash_register = CashRegister::where('id_sucursal', $this->get_cookie('id_sucursal'))
+            $cash_register = CashRegister::where('id_sucursal', $sucursal->id)
                                         ->whereDate('date', date('Y-m-d'))
                                         ->first();
             if ($cash_register) {
@@ -60,7 +65,7 @@ class CashRegisterController extends Controller
             else 
                 $turn = null;
         }
-        return response()->json(["cash_register" => $cash_register, "turn" => $turn]);
+        return response()->json(["sucursal" => $sucursal, "cash_register" => $cash_register, "turn" => $turn]);
     }
 
     public function new_cash_register(Request $request) {

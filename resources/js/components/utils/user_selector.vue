@@ -6,7 +6,7 @@
           <input @keydown.tab="disableTab" type="text" v-model="search" @keyup.enter="findUser">
         </li>
         <li>
-            <span>{{ user.toUpperCase() }}</span>
+            <span v-if="user">{{ user.name.toUpperCase() }}</span>
         </li>
       </ul>
   </div>
@@ -17,9 +17,9 @@
     name: 'UserSelector',
     data() { 
       return {
-        user: '',
         options: [],
-        search: ''
+        search: '',
+        user: this.actualUser
       }
     },
     props: {
@@ -34,7 +34,19 @@
       role: {
           type: String, 
           default: ''
+      },
+      actualUser:  {
+          type: Object,
+          default: null
       }
+    },
+    watch: {
+      actualUser(newValue) {
+        this.user = newValue
+        if (newValue != null) {
+          this.search = ''
+        }
+      } 
     },
     methods: {
         disableTab(e) {
@@ -55,19 +67,18 @@
           var found = false
           this.options.forEach(user => {
             if (user.id == this.search) {
-              this.user = user.name
+              this.username = user.name
               found = true
+              this.user = user
               this.updateUser(user)
               return;
             }
           })
-
+          
           if (!found) {
-            this.user = ''
+            this.user = null
             this.updateUser(null)
           }
-
-          
         }
     },
     created() {

@@ -29,6 +29,7 @@ class ShoeColorTableSeeder extends Seeder
             "Bco/azu",
             "Bco/gris",
             "Bco/neg",
+            "Bco/nude",
             "Bco/oro",
             "Bco/plata",
             "Bco/rosa",
@@ -105,6 +106,7 @@ class ShoeColorTableSeeder extends Seeder
             "Lol",
             "Madera",
             "Maiz",
+            "Manzana",
             "Marino",
             "Marron",
             "Mate",
@@ -136,6 +138,7 @@ class ShoeColorTableSeeder extends Seeder
             "Negro/gris",
             "Nude",
             "Oro",
+            "Oscuro",
             "Palmera",
             "Perla",
             "Petroleo",
@@ -172,7 +175,7 @@ class ShoeColorTableSeeder extends Seeder
             "Vibora",
             "Violeta",
             "Vison",
-            "White"
+            "White",
         ];
         foreach($colors as $color) {
             $new = new ShoeColor();

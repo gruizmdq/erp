@@ -20,7 +20,35 @@
 
   <!--Main Navigation-->
   <header>
+ <!-- Navbar -->
+ <nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar">
+      <div class="container-fluid">
 
+        <!-- Collapse -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Links -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
+          <!-- Right -->
+          <ul class="navbar-nav nav-flex-icons">
+            <li class="nav-item">
+              <a tabindex="-1" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('frm-logout').submit();" class="nav-link border border-light rounded waves-effect">
+                  Cerrar Sesión
+              </a>    
+              <form tabindex="-1" id="frm-logout" action="{{ route('logout') }}" method="POST" style="display: none;">
+                  {{ csrf_field() }}
+              </form>
+            </li>
+          </ul>
+
+        </div>
+
+      </div>
+    </nav>
     <!-- Sidebar -->
     <div class="sidebar-fixed position-fixed">
 

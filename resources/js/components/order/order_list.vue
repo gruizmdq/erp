@@ -38,10 +38,10 @@
         </md-table>
 
         <div v-if="items && items.length > 0" class="navigation">
-            <ul>
-                <li><a @click="getData(prev_page)">Previous</a></li>
-                <li><a @click="getData(next_page)">Next</a></li>
-                <li><a @click="getData(last_page)">Last page</a></li>
+            <ul class="mt-2 pagination pg-blue">
+                <li class="white page-item"><a class="page-link" @getData="getOrders(prev_page)">Anterior</a></li>
+                <li class="white page-item"><a class="page-link" @getData="getOrders(next_page)">Siguiente</a></li>
+                <li class="white page-item"><a class="page-link" @getData="getOrders(last_page)">Última página</a></li>
             </ul>
         </div>
 

@@ -7,8 +7,8 @@
 						<label ref="client" for="client">Cliente</label>
 						<input type="text" id="client" class="form-control" placeholder="Cliente" />
 					</div>
-					<user-selector label="Vendedor" @update="updateSeller" role="seller"></user-selector>
-					<user-selector label="Cajero" @update="updateCashier" role="cashier"></user-selector>
+					<user-selector label="Vendedor" @update="updateSeller" role="seller" :actualUser.sync="seller"></user-selector>
+					<user-selector label="Cajero" @update="updateCashier" role="cashier" :actualUser.sync="cashier"></user-selector>
 				</div>
 			</div>
 

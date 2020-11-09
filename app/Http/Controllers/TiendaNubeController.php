@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-ini_set('max_execution_time', 360);
+ini_set('max_execution_time', 3600);
 
 use Log;
 use Illuminate\Http\Request;
@@ -353,6 +353,8 @@ class TiendaNubeController extends Controller
         $statusCode = 200;
         $i = 0;
 
+        $sku_null_list = [];
+
         while($statusCode == 200){
             $i += 1;
             try {
@@ -367,8 +369,17 @@ class TiendaNubeController extends Controller
                         try {
                             $id = $item['id'];
                             $sku = $item['sku'];
-                            if ($sku == null)
+
+                            
+                            if ($sku == null) {
+                                Log::info("sku null id {$product['id']}");
+                                if (!in_array($product['id'], $sku_null_list))
+                                    $sku_null_list[] = $product['id'];
                                 continue;
+                            }
+                            
+                            // check if sku exists
+                            $exists = ShoeDetail::findOrFail(intval($sku));
 
                             $is_mapped = MappingTiendanube::where('id_tiendanube', $id)->first();
                             if ($is_mapped) {
@@ -386,18 +397,19 @@ class TiendaNubeController extends Controller
                         }
                         catch(Exception $e) {
                             $errors += 1;
+                            Log::error("Error para sku: {$item['sku']} - id: {$item['id']}");
                         }
                     }
                 }
                 DB::commit();
                 $i++;
-                if ($total < 200)
-                    $i = 0;
             }
             catch (Exception $e) {
                 $statusCode = 404;
             }
         }
+        Log::info(self::LOG_LABEL." Skus nullos: ");
+        Log::info($sku_null_list);
         Log::info(self::LOG_LABEL." Procces endend. {$success} product/s mapped and {$errors} errors. {$mapped} were already mapped.");
     }
 
@@ -407,35 +419,40 @@ class TiendaNubeController extends Controller
 
         $id_store = self::TIENDANUBE_START_STORE_ID;
         $last_update = TiendanubeUpdateRun::where('action', 'update')->latest('created_at')->first();
-
+        $failed = [];
         Log::info(self::LOG_LABEL." Updating mapping products...");
         
-        $shoe_details = ShoeDetail::select('shoe_details.id as sku', 'shoe_details.stock', 'mapping_tiendanubes.id_tiendanube_product', 'mapping_tiendanubes.id_tiendanube')
+        $shoe_details = ShoeDetail::select('shoe_details.id as sku', 'shoe_details.stock', 'mapping_tiendanubes.id_tiendanube_product', 'mapping_tiendanubes.id_tiendanube', 'shoe_details.stock as stock', 'shoe_details.sell_price as price')
                     ->where('shoe_details.updated_at', '>', $last_update->created_at)
                     ->where('mapping_tiendanubes.id_tiendanube_store', $id_store)
                     ->join('mapping_tiendanubes', 'shoe_details.id', 'mapping_tiendanubes.id_shoe_detail')
                     ->get();
-                    Log::info($shoe_details);
         
         Log::info(self::LOG_LABEL." Products to update: ".count($shoe_details));
-
+        $i = 0;
         foreach ($shoe_details as $item) {
-            try {
+            try { 
+                $i++;
+                Log::info("Updating {$i} {$item->sku} $ {$item->price}...");
                 $request = $this->createRequest();
                 $request->put(self::TIENDA_NUBE_API_URL.'products/'.$item->id_tiendanube_product.'/variants/'.$item->id_tiendanube,[
-                    'stock' => $item->stock
+                    'price' => $item->price,
+                    'promotional_price' => $item->price,
                 ]);
             }
             catch (Exception $e) {
                 Log::error(self::LOG_LABEL." ERROR. Error updating SKU { $item->sku }.");
                 Log::error($e);
+                $failed[] = $item->sku;
             }
             
         }
-        Log::info(self::LOG_LABEL." Updating mapping product finished.");
+        Log::info(self::LOG_LABEL." Updating mapping product finished. Failed items: ");
+        Log::info($failed);
         $new_run = new TiendanubeUpdateRun();
         $new_run->action = 'update';
-        $new_run->save();
+        //TODO
+        //$new_run->save();
     }
 
     public function create_product_tiendanube (Request $request) {

@@ -9,6 +9,14 @@
             <button @click="newTurn" style="margin: auto; max-width: 200px" type="button" class="btn btn-sm btn-primary">Abrir Turno</button>
         </div>
         <div v-if="cashRegister && turn">
+            <div class="card mb-4 wow fadeIn">
+                <div class="card-body d-sm-flex justify-content-between">
+                    <h4 class="mb-2 mb-sm-0 pt-1">
+                        <a>Sucursal</a>
+                        <span v-if="sucursal">/ {{ sucursal.name }}</span>
+                    </h4>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-md-3">
                     <div class="card p-3">
@@ -104,6 +112,7 @@ export default {
             CARD: 2, 
             CUENTA_CORRIENTE: 3, 
 
+            sucursal: null,
             cashRegister: null,
             turn: null,
             showAlert: false,
@@ -158,7 +167,7 @@ export default {
     methods: {
         getData() {
             axios.get('/api/cash/cash_register').then(response => {
-                console.log(response.data)
+                this.sucursal = response.data.sucursal
                 if (response.data.cash_register)
                     this.cashRegister = response.data.cash_register;
                 if (response.data.turn)
