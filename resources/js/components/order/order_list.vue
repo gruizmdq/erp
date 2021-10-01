@@ -1,5 +1,40 @@
 <template>
     <div>
+        <div class="mb-4 p-1 white z-depth-1">
+            <div class="md-layout md-gutter">
+                <div class="md-layout-item md-small-size-100">
+                    <md-datepicker v-model="selectedDateFrom" md-immediately>
+                        <label>Desde</label>
+                    </md-datepicker>
+                </div>
+
+                <div class="md-layout-item md-small-size-100">
+                    <md-datepicker v-model="selectedDateTo" md-immediately>
+                        <label>Hasta</label>
+                    </md-datepicker>
+                </div>
+
+                <div class="md-layout-item md-small-size-100">
+                    <md-button class="md-dense md-raised md-primary" @click="getOrders" :disabled="selectedDateFrom > selectedDateTo">Buscar</md-button>
+                </div>
+            </div>
+
+            <div class="md-layout md-gutter">
+                <div class="md-layout-item md-small-size-100">
+                    <p>Tipo de Venta</p>
+                    <md-radio v-model="type" :value="TYPE_ALL">Todas</md-radio>
+                    <md-radio v-model="type" :value="TYPE_MARKETPLACE" class="md-primary">MarketPlace</md-radio>
+                    <md-radio v-model="type" :value="TYPE_SUCURSALES" class="md-primary">Sucursales</md-radio>
+                    <md-radio v-model="type" :value="TYPE_TIENDANUBE" class="md-primary">Tienda Nube</md-radio>
+                </div>
+                <div class="md-layout-item md-small-size-100" v-if="type == TYPE_SUCURSALES">
+                    <p>Sucursal</p>
+                    <md-radio v-model="sucursal" :value="SUCURSAL_ALL">Todas</md-radio>
+                    <md-radio v-model="sucursal" :value="SUCURSAL_RUFINA" class="md-primary">Rufina</md-radio>
+                    <md-radio v-model="sucursal" :value="SUCURSAL_START" class="md-primary">Start Calzados</md-radio>
+                </div>
+            </div>
+        </div>
         <md-table v-model="searched" md-sort="first_name" md-sort-order="asc" md-card md-fixed-header @md-selected="onSelect">
             <md-table-toolbar>
                 <div class="md-toolbar-section-start">
@@ -58,6 +93,8 @@
     </div>
 </template>
 <script>
+import moment from 'moment';
+
 const toLower = text => {
     return text.toString().toLowerCase()
 }
@@ -68,6 +105,11 @@ const searchByBrandName = (items, term) => {
     }
     return items
 }
+
+const formatDate = date => {
+    return moment(String(date)).format('YYYY-MM-DD')
+}
+
 export default {
     name: "OrderList",
     
@@ -84,7 +126,22 @@ export default {
             alert_content: '',
             filters: {},
             filter_lines: [],
-            activeConfirmDialog: false
+            activeConfirmDialog: false,
+            selectedDateFrom: new Date(),
+            selectedDateTo: new Date(),
+
+            type: "0",
+            sucursal: "0",
+
+            TYPE_ALL: "0",
+            TYPE_MARKETPLACE: "1",
+            TYPE_SUCURSALES: "2",
+            TYPE_TIENDANUBE: "3",
+
+            SUCURSAL_ALL: "0",
+            SUCURSAL_START: "1",
+            SUCURSAL_RUFINA: "2",
+
         }
     },
     methods: {
@@ -92,11 +149,16 @@ export default {
             console.log(payments)
         },
         getOrders(url){
-            let endpoint = url == null ? '/api/contacts/get_contacts' : url
-            axios.get('/api/order/', {params: { 
-                                            filters: {date: '2020-08-18', id_sucursal: 1},
-                                            type: 'sucursal'  }
-                                            }
+            axios.get('/api/order/', {params: 
+                                        { 
+                                            filters: {
+                                                dateFrom: formatDate(this.selectedDateFrom),
+                                                dateTo: formatDate(this.selectedDateTo),
+                                                sucursal: this.sucursal
+                                            },
+                                            type: this.type  
+                                        }
+                                    }
             ).then(response => {
                 console.log(response.data)
                 if (response.data.total == 0) {

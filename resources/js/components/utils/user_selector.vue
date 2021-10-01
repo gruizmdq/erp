@@ -3,7 +3,7 @@
       <p>{{ label }}</p>
       <ul>
         <li>
-          <input @keydown.tab="disableTab" type="text" v-model="search" @keyup.enter="findUser">
+          <input ref="user" @keydown.tab="disableTab" type="text" v-model="search" @keyup.enter="findUser">
         </li>
         <li>
             <span v-if="user">{{ user.name.toUpperCase() }}</span>
@@ -50,7 +50,7 @@
     },
     methods: {
         disableTab(e) {
-          if (this.user == '')
+          if (this.user == null)
             e.preventDefault()
         }, 
         updateUser(user) {
@@ -59,14 +59,13 @@
         getData() {
             axios.get('/api/users', this.role != "" ? {params: { role: this.role }} : null)
             .then(response => {
-                console.log(response.data)
                 this.options = response.data;
             });
         },
         findUser() {
           var found = false
           this.options.forEach(user => {
-            if (user.id == this.search) {
+            if (user.code == this.search) {
               this.username = user.name
               found = true
               this.user = user

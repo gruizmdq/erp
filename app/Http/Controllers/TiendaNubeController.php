@@ -18,9 +18,11 @@ use App\Order;
 use App\TiendanubeError;
 use App\MappingTiendanube;
 use App\TiendanubeUpdateRun;
+use App\TiendaNubeStockError;
 
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 class TiendaNubeController extends Controller
 {
@@ -260,7 +262,7 @@ class TiendaNubeController extends Controller
     }
 
     private function sendRequest($url, $retries = 3, $timeout = 10) {
-        Log::info(self::LOG_LABEL." Sending request to get data");
+        Log::info(self::LOG_LABEL." Sending request to get data: ".self::TIENDA_NUBE_API_URL.$url);
         $request = Http::withHeaders([
             'Authentication' => 'bearer '.\Config('tiendaNube.api_key'),
         ])
@@ -291,9 +293,10 @@ class TiendaNubeController extends Controller
 
         $shoes = Shoe::select('shoes.id as id', 'shoe_brands.name as brand', 'shoes.code as code')
                 ->join("shoe_brands", "shoe_brands.id", 'shoes.id_brand')
-                ->where('shoes.id_brand', $brand)
+                ->whereIn('shoes.id', ShoeDetail::select('id_shoe')->where('id', '>', 89597)->get())
+                #->where('shoes.id_brand', $brand)
                 ->get();
-
+        Log::info("Artículos: ".count($shoes));
         foreach ($shoes as $shoe) {
             $data = [];
             $colors = ShoeDetail::select('shoe_colors.name as color', 'shoe_colors.id as id')
@@ -302,10 +305,11 @@ class TiendaNubeController extends Controller
                         ->distinct()
                         ->get();
 
-            $shoesDetails = ShoeDetail::select('shoe_colors.name as color', 'shoe_details.number as number', 'shoe_details.sell_price as price', 'shoe_details.id as sku' )
+            $shoesDetails = ShoeDetail::select('shoe_colors.name as color', 'shoe_details.number as number', 'shoe_details.sell_price as price', 'shoe_details.id as sku', 'shoe_details.stock as stock' )
                     ->join('shoe_colors', 'shoe_details.id_color', 'shoe_colors.id')
                     ->where('shoe_details.id_shoe', $shoe->id)
-                    ->where('shoe_details.id', '<', 85000)
+                    ->where('shoe_details.id', '>', 88694)
+                    ->whereNotIn('shoe_details.id', MappingTiendanube::select('id')->get())
                     ->get();
 
             foreach($colors as $color) {
@@ -317,7 +321,7 @@ class TiendaNubeController extends Controller
             }
             foreach($shoesDetails as $detail){
                 $new = ['price' => $detail->price,
-                    'stock' => 0,
+                    'stock' => $detail->stock,
                     'weight' => '0.500',
                     'width' => '15.00',
                     'height' => '8.00',
@@ -330,17 +334,16 @@ class TiendaNubeController extends Controller
                     ];
                 $data[$detail->color]['variants'][] = $new;
             }
-            Log::info(self::LOG_LABEL." {$shoe->brand} {$shoe->code}");
+            #Log::info(self::LOG_LABEL." {$shoe->brand} {$shoe->code}");
 
             foreach($data as $d) {
                 if (count($d['variants'])) {
+                    #Log::info(self::LOG_LABEL." {$shoe->brand} {$shoe->code}: ". $d['variants'][0]['values'][1]['es']);
                     Log::info(self::LOG_LABEL." Sending requests color: ". $d['variants'][0]['values'][1]['es']);
                     $response = $request->post(self::TIENDA_NUBE_API_URL.'products', $d);
                 }
             }
         }
-        
-        
 
     }
 
@@ -350,36 +353,34 @@ class TiendaNubeController extends Controller
         $mapped = 0;
         $errors = 0;
         $success = 0;
-        $statusCode = 200;
+        $stop = false;
         $i = 0;
 
         $sku_null_list = [];
+        $duplicated = [];
+        $not_in_db = [];
 
-        while($statusCode == 200){
+        while(!$stop){
             $i += 1;
             try {
                 $response = $this->sendRequest("products?page=".$i."&per_page=200&fields=variants,id");
-
-            
                 DB::beginTransaction();
+
                 $total = count($response->json());
-                
                 foreach($response->json() as $product) {
                     foreach($product['variants'] as $item) {
                         try {
                             $id = $item['id'];
                             $sku = $item['sku'];
-
                             
                             if ($sku == null) {
-                                Log::info("sku null id {$product['id']}");
                                 if (!in_array($product['id'], $sku_null_list))
                                     $sku_null_list[] = $product['id'];
                                 continue;
                             }
                             
                             // check if sku exists
-                            $exists = ShoeDetail::findOrFail(intval($sku));
+                            $shoe_detail = ShoeDetail::findOrFail(intval($sku));
 
                             $is_mapped = MappingTiendanube::where('id_tiendanube', $id)->first();
                             if ($is_mapped) {
@@ -391,25 +392,42 @@ class TiendaNubeController extends Controller
                             $mapping->id_tiendanube = $id;
                             $mapping->id_tiendanube_product = $product['id'];
                             $mapping->id_shoe_detail = $sku;
+                            $mapping->id_shoe = $shoe_detail->id_shoe;
                             $mapping->id_tiendanube_store = self::TIENDANUBE_START_STORE_ID;
                             $mapping->save();
                             $success += 1;
                         }
+                        catch(QueryException $e) {
+                            $errors += 1;
+                            $duplicated[] = $item['sku'];
+                        }
+                        catch(ModelNotFoundException $e) {
+                            $errors += 1;
+                            $not_in_db[] = $item['sku'];
+                        }
                         catch(Exception $e) {
                             $errors += 1;
                             Log::error("Error para sku: {$item['sku']} - id: {$item['id']}");
+                            Log::error($e);
                         }
                     }
                 }
                 DB::commit();
-                $i++;
+            }
+            catch(RequestException $e) {
+                $stop = true;
             }
             catch (Exception $e) {
-                $statusCode = 404;
+                $stop = true;
+                Log::info($e);
             }
         }
+        Log::info(self::LOG_LABEL." Skus que no existen en start: ");
+        Log::info($not_in_db);
+        Log::info(self::LOG_LABEL." Skus duplicados en tiendanube: ");
+        Log::info($duplicated);
         Log::info(self::LOG_LABEL." Skus nullos: ");
-        Log::info($sku_null_list);
+        Log::error($sku_null_list);
         Log::info(self::LOG_LABEL." Procces endend. {$success} product/s mapped and {$errors} errors. {$mapped} were already mapped.");
     }
 
@@ -423,8 +441,9 @@ class TiendaNubeController extends Controller
         Log::info(self::LOG_LABEL." Updating mapping products...");
         
         $shoe_details = ShoeDetail::select('shoe_details.id as sku', 'shoe_details.stock', 'mapping_tiendanubes.id_tiendanube_product', 'mapping_tiendanubes.id_tiendanube', 'shoe_details.stock as stock', 'shoe_details.sell_price as price')
-                    ->where('shoe_details.updated_at', '>', $last_update->created_at)
+                    #->where('shoe_details.updated_at', '>', $last_update->created_at)
                     ->where('mapping_tiendanubes.id_tiendanube_store', $id_store)
+                    ->where('shoe_details.id', '>', 88694)
                     ->join('mapping_tiendanubes', 'shoe_details.id', 'mapping_tiendanubes.id_shoe_detail')
                     ->get();
         
@@ -433,11 +452,13 @@ class TiendaNubeController extends Controller
         foreach ($shoe_details as $item) {
             try { 
                 $i++;
-                Log::info("Updating {$i} {$item->sku} $ {$item->price}...");
+                Log::info("Updating {$i} {$item->sku} $ {$item->price}, stock: {$item->stock}...");
                 $request = $this->createRequest();
                 $request->put(self::TIENDA_NUBE_API_URL.'products/'.$item->id_tiendanube_product.'/variants/'.$item->id_tiendanube,[
-                    'price' => $item->price,
-                    'promotional_price' => $item->price,
+                    //'price' => $item->price,
+                    //'promotional_price' => 0,
+                    //TODO
+                    'stock' => $item->stock
                 ]);
             }
             catch (Exception $e) {
@@ -447,12 +468,18 @@ class TiendaNubeController extends Controller
             }
             
         }
-        Log::info(self::LOG_LABEL." Updating mapping product finished. Failed items: ");
+        Log::info(self::LOG_LABEL." Updating mapped product finished. Failed items: ");
         Log::info($failed);
         $new_run = new TiendanubeUpdateRun();
         $new_run->action = 'update';
+        foreach($failed as $f) {
+            $row = new TiendaNubeStockError();
+            $row->action = "update";
+            $row->id_shoe_detail = $item->sku;
+            $row->save();
+        }
         //TODO
-        //$new_run->save();
+        $new_run->save();
     }
 
     public function create_product_tiendanube (Request $request) {
@@ -461,12 +488,19 @@ class TiendaNubeController extends Controller
 
         $id_store = self::TIENDANUBE_START_STORE_ID;
         $last_update = TiendanubeUpdateRun::where('action', 'create')->latest('created_at')->first();
+        $new_products = [];
+        $new_variants = [];
 
         try {
             Log::info(self::LOG_LABEL." Creating new products...");
 
-            $shoe_details = ShoeDetail::select('shoe_details.id as sku', 'shoe_details.stock')
+            $shoe_details = ShoeDetail::select('shoe_brands.name as brand', 'shoes.code as code', 'shoe_colors.name as color', 'shoe_details.id_shoe as id_shoe', 'shoe_details.number as number', 'shoe_details.id as sku', 'shoe_details.stock', 'shoe_details.sell_price as price', 'shoe_details.id_color as id_color')
                         ->where('shoe_details.updated_at', '>', $last_update->created_at)
+                        ->join('shoe_colors', 'shoe_details.id_color', 'shoe_colors.id')
+                        ->join('shoes', 'shoe_details.id_shoe', 'shoes.id')
+                        ->join('shoe_brands', 'shoes.id_brand', 'shoe_brands.id')
+                        //TODO delete this
+                        ->where('shoe_details.id', '>', 87798)
                         ->whereNotExists( function ($query) use ($id_store) {
                             $query->select(DB::raw(1))
                             ->from('mapping_tiendanubes')
@@ -476,8 +510,76 @@ class TiendaNubeController extends Controller
                         ->get();
 
             Log::info(self::LOG_LABEL." Products to create: ".count($shoe_details));
+            
+            foreach($shoe_details as $detail){
+                //Create Variant
+                $new_variant = ['price' => $detail->price,
+                        'stock' => $detail->stock,
+                        'weight' => '0.500',
+                        'width' => '15.00',
+                        'height' => '8.00',
+                        'depth' => '25.00',
+                        'sku' =>  $detail->sku,
+                        'values' => [
+                                ['es' => strval($detail->number)],
+                                ['es' => $detail->color]
+                            ]
+                        ];
 
+                //check if exists shoe in TN
+                $exists = MappingTiendanube::join('shoe_details', 'mapping_tiendanubes.id_shoe_detail', 'shoe_details.id')
+                        ->where('shoe_details.id_color', $detail->id_color)
+                        ->where('shoe_details.id_shoe', $detail->id_shoe)
+                        ->first();
+                
+                if (!$exists) {
+                    //Check si ya se procesó un variant 
+                    if (!array_key_exists($detail->id_shoe . $detail->color, $new_products)) {
+                        $new_product = ['name' => $detail->brand.' '.$detail->code, 
+                        'attributes' => [['es' => 'Talle'], ['es' => 'Color']],
+                        'published' => false,
+                        'variants' => [$new_variant]
+                        ];
+                        $new_products[$detail->id_shoe . $detail->color] = $new_product;
+                    }
+                    else {
+                        $new_products[$detail->id_shoe . $detail->color]['variants'][] = $new_variant;
+                    }
+                }
+                else {
+                    $new_variants[] = [
+                        'id_tiendanube' => $exists->id_tiendanube_product,
+                        'variant' => $new_variant
+                    ];
+                }
+            }
+           
+            //Sending new products
+            foreach($new_products as $new) {
+                try {
+                    $request = $this->createRequest();
+                    Log::info(self::LOG_LABEL." Sending request to tiendanube");
+                    $response = $request->post(self::TIENDA_NUBE_API_URL.'products', $new);
+                    Log::info(self::LOG_LABEL. " Ok.");
+                }
+                catch (Exception $e) {
+                    Log::error(self::LOG_LABEL. " ERROR. Could not perform create action for new product {$new['name']}.");
+                }
+            }
 
+            //sending new variants
+            foreach($new_variants as $new) {
+                try {
+                    $request = $this->createRequest();
+                    Log::info(self::LOG_LABEL." Sending request to tiendanube: ".self::TIENDA_NUBE_API_URL."products/{$new['id_tiendanube']}/variants");
+                    $response = $request->post(self::TIENDA_NUBE_API_URL."products/{$new['id_tiendanube']}/variants", $new['variant']);
+                    Log::info(self::LOG_LABEL. " Ok.");
+                }
+                catch (Exception $e) {
+                    Log::error($e);
+                    Log::error(self::LOG_LABEL. " ERROR. Could not perform create action for new variant (id tiendanube: {$new['id_tiendanube']}).");
+                }
+            }
         }
         catch (Exception $e) {
             Log::error($e);

@@ -106,6 +106,27 @@ class StockController extends Controller{
         return response()->json($articles);
     }
 
+    public function find_articles(Request $request) {
+        $request->user()->authorizeRoles(['admin', 'seller']);
+
+        $brand_name = $request->input('brand_name');
+        $article_name = $request->input('article_name');
+        $color_name = $request->input('color_name');
+
+        $articles = ShoeDetail::select('shoe_details.*', 'shoe_colors.name as color_name', 'shoe_brands.name as brand_name', 'shoes.code as code')
+                                    ->where([
+                                        ['shoes.code','like','%'.$article_name.'%'],
+                                        ['shoe_brands.name', 'like', '%'.$brand_name.'%'],
+                                        ['shoe_colors.name', 'like', '%'.$color_name.'%']
+                                    ])
+                                    ->join('shoes', 'shoes.id', '=', 'shoe_details.id_shoe')
+                                    ->join('shoe_brands', 'shoe_brands.id', '=', 'shoes.id_brand')
+                                    ->join('shoe_colors', 'shoe_details.id_color', '=', 'shoe_colors.id')
+                                    ->paginate(50);
+
+        return response()->json($articles);
+    }
+
     public function get_articles_id (Request $request) {
         $request->user()->authorizeRoles(['admin']);
 
@@ -325,7 +346,6 @@ class StockController extends Controller{
         DB::beginTransaction();
 
         foreach ($items as $item) {
-            if ($item['stock_to_add'] > 0)
             try {
                 #TODO cambiar esto para que agarre barcode del ultimo
                 if ( !array_key_exists('barcode', $item) ){

@@ -22,7 +22,8 @@ class CreateOrderItemsTable extends Migration
             $table->float('buy_price', 10, 2)->nullable($value = false);
             $table->float('total', 10, 2)->nullable($value = false);
             $table->string('sucursal')->nullable();
-            
+            $table->string('type')->nullable()->default($value = 'OUT');
+
             $table->timestamps();
             $table->softDeletes();
 

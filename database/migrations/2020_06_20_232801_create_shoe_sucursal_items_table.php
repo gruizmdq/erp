@@ -17,7 +17,7 @@ class CreateShoeSucursalItemsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('id_shoe_detail');
             $table->unsignedBigInteger('id_sucursal');
-            $table->unsignedBigInteger('stock');
+            $table->signedBigInteger('stock');
             $table->timestamps();
 
             $table->foreign('id_shoe_detail')->references('id')->on('shoe_details');

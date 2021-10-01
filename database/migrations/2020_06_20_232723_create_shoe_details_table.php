@@ -22,7 +22,7 @@ class CreateShoeDetailsTable extends Migration
             $table->string('barcode')->default($value = null)->unique();
             $table->float('buy_price', 10, 2)->nullable($value = false);
             $table->float('sell_price', 10, 2)->nullable($value = false);
-            $table->unsignedSmallInteger('stock');
+            $table->signedSmallInteger('stock');
             $table->boolean('available_tiendanube')->default($value = 0);
             $table->boolean('available_marketplace')->default($value = 0);
             $table->timestamps();

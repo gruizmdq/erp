@@ -19,16 +19,16 @@
                     <td>{{ item.sell_price }}</td>
                     <td>
                         <span class="input-symbol z-depth-1 money">
-                            <input v-model="price" type="number" min="0">
+                            <input ref="price" @keydown.right="$refs.discount.focus()" @keydown.enter="$event.target.nextElementSibling.focus()" v-model="price" type="number" min="0">
                         </span>
                     </td>
-                    <td>{{ subtotal }}</td>
+                    <td class="bold">{{ subtotal }}</td>
                     <td>
                         <span class="input-symbol z-depth-1 percentage">
-                            <input min="0" max="100" type="number" v-model="discount">
+                            <input @keydown.left="$refs.price.focus()" @keydown.right="$refs.button.focus()" ref="discount" min="0" max="100" type="number" v-model="discount">
                         </span>
                     </td>
-                    <td><input class="boton" type="button" @click="$emit('confirmitem', price, discount, subtotal)" value="Aceptar"></td>
+                    <td><input @keydown.left="$refs.discount.focus()" ref="button" class="boton" type="button" @click="$emit('confirmitem', sell_price, price, discount, subtotal)" value="Aceptar"></td>
                 </tr>
             </tbody>
         </table>
@@ -40,6 +40,7 @@ export default {
     data() {
         return {
             discount: 0,
+            sell_price: this.item.sell_price,
             price: this.item.sell_price
         }
     },
@@ -60,6 +61,10 @@ export default {
     button:focus{
         background: black;
         color: white;
+    }
+    .bold{
+        font-weight: bold;
+        font-size: 15px;
     }
     .input-symbol {
         position: relative;

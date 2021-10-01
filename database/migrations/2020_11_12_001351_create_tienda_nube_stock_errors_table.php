@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCreditNotesTable extends Migration
+class CreateTiendaNubeStockErrorsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,14 +13,14 @@ class CreateCreditNotesTable extends Migration
      */
     public function up()
     {
-        Schema::create('credit_notes', function (Blueprint $table) {
+        Schema::create('tienda_nube_stock_errors', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_user');
-            $table->float('amount', 10, 2);
-            $table->string('status')->default($value = 'CREATED');
-            
+            $table->unsignedBigInteger('id_shoe_detail');
+            $table->string('action');
+
             $table->timestamps();
-            $table->foreign('id_user')->references('id')->on('users');
+
+            $table->foreign('id_shoe_detail')->references('id')->on('shoe_details');
         });
     }
 
@@ -31,6 +31,6 @@ class CreateCreditNotesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('credit_notes');
+        Schema::dropIfExists('tienda_nube_stock_errors');
     }
 }

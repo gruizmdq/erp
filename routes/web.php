@@ -88,3 +88,10 @@ Route::get('/stock/reset/unprocessed', 'PdfController@getStockResetUnProcessed')
 Route::get('/cash', function (Request $request) {    
     return view('cash.home');
 })->name('cash')->middleware('auth');
+
+/*************************/
+/* CREDIT NOTES ROUTES */
+/***********************/
+Route::get('/creditNote', function (Request $request) {    
+    return view('creditNote.home');
+})->name('creditNote')->middleware('auth');

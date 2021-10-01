@@ -56,9 +56,9 @@ class PdfController extends Controller
             $html = view('pdf.generar', ["barcode" => $item['barcode'], "number" => $item['number'], "color" => $color, "brand_name" => $brand_name, "code" => $code]);
             for ($i = 0; $i < $item['stock_to_add']; $i++){
                 $mpdf->WriteHTML($html);
-                $mpdf->AddPage();
+                if ($i < $item['stock_to_add']-1)
+                    $mpdf->AddPage();
             }
-
         }
 
         $mpdf->SetDisplayMode('fullpage');

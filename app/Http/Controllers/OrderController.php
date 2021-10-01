@@ -14,6 +14,8 @@ use App\OrderSucursal;
 use App\OrderPayment;
 use App\OrderItem;
 use App\OrderReset;
+use App\OrderDiscount;
+use App\OrderChange;
 use App\Order;
 
 use App\CashRegister;
@@ -33,7 +35,7 @@ class OrderController extends Controller
     const STATUS_SUCCESS_TITLE = "¡Bien papá!";
     const STATUS_SUCCESS_CODE = 200;
 
-    const PAGINATE_SIZE = 50;
+    const PAGINATE_SIZE = 50;    
 
     public function index(Request $request) {
         $request->user()->authorizeRoles(['admin', 'cashier']);
@@ -42,14 +44,14 @@ class OrderController extends Controller
         try {
             $cash = CashRegister::where([
                 ['id_sucursal', $this->get_cookie('id_sucursal')],
-                ['status', 0]
-            ])->whereDate('date', date('Y-m-d'))->first();
+                ['status', CashRegister::STATUS_OPEN]
+            ])->first();
 
             if ($cash) {
                 $turn = CashRegisterTurn::where([
                     ['id_cash_register', $cash->id],
-                    ['status', 0]
-                ])->latest();
+                    ['status', CashRegister::STATUS_OPEN]
+                ])->first();
             }
         }
         catch (Exception $e) {
@@ -113,34 +115,12 @@ class OrderController extends Controller
 
     public function get_orders(Request $request) {
         $request->user()->authorizeRoles(['admin', 'cashier']);
-
-        //TODO FILTERS!
-        //$filters = json_decode($request->input(self::FILTERS_KEY_NAME, null), true);
-        $filters = null;
-        $orders = DB::table('orders')->orderByRaw('order_id DESC');
-        if ($filters != null) {
-            foreach ($filters as $key => $value) {
-                $orders->where($key, $value);
-            }
-        }
+        
+        $filters = json_decode($request->input('filters'), true);
+        $type = $request->input('type');
 
         try {
-            $order_buy_price = OrderItem::select('id_order', DB::raw('sum(buy_price) as buy_price'))
-                                ->groupBy('id_order');
-            $orders = $orders->joinSub($order_buy_price, 'buy_price', function($join) {
-                $join->on('orders.order_id', '=', 'buy_price.id_order');
-            });
-            
-            //GET SUCURSAL NAME!
-            if ($request->input('type', null) == 'sucursal') {
-                $sucursal = Sucursal::select('name as type', 'order_sucursals.id as id_order')
-                                    ->join('order_sucursals', 'sucursals.id', 'order_sucursals.id_sucursal');
-                $orders->joinSub($sucursal, 'sucursal', function($join) {
-                    $join->on('orders.order_id', 'sucursal.id_order');
-                });
-            }
-            //TODO obtener ordenes de tienda nube, marketplace, etc.
-            $orders = $orders->paginate(self::PAGINATE_SIZE);
+            $orders = Order::get_orders($filters, $type);
         }
         catch (Exception $e) {
             Log::error(self::LOG_LABEL." ERROR. Error performing get action.");
@@ -180,18 +160,28 @@ class OrderController extends Controller
 
         try {
             DB::beginTransaction();
+            if ($request->input('order.orderType') == 'OrderSucursal') {
+                $orderType = 'App\OrderSucursal';
+            }
+            else if($request->input('order.orderType') == 'OrderChange') {
+                $orderType = 'App\OrderChange';
+            }
 
             $order = Order::create([
                         'id_user' => Auth::id(),
                         'id_client' => $request->input('order.client', null),
-                        'order_type' => 'App\OrderSucursal',
+                        'order_type' => $orderType,
                         'qty' => $data['qty'],
                         'subtotal' => $data['subtotal'],
                         'total' => $data['total'],
                     ]);
             
             if ($request->input('order.orderDiscount', null)) {
-                $id = $this->create_discount($request->input('order.orderDiscount'));
+                $id = OrderDiscount::create([
+                        'id_user' => Auth::id(),
+                        'description' => $request->input('order.orderDiscount.comments', null),
+                        'amount' => $request->input('order.orderDiscount.amount', 0)
+                    ])->id;
                 $order->id_discount = $id;
                 $order->save();
             }
@@ -200,29 +190,21 @@ class OrderController extends Controller
             //ORDER ITEMS
             foreach ($data['items'] as $item) {
                 Log::info(self::LOG_LABEL." Creating new order item (id: {$item['id']})");
-                $new = OrderItem::create([
-                        'id_order' => $order->order_id,
-                        'id_shoe_detail' => $item['id'],
-                        'qty' => $item['qty'],
-                        'buy_price' => $item['buy_price'],
-                        'sell_price' => $item['sell_price'],
-                        'total' => $item['price']
-                    ]);
-
-                Log::info(self::LOG_LABEL." New order item (id: {$item['id']}) created");
-                Log::info(self::LOG_LABEL." Updating sucursal stock for item (id: {$item['id']})");
-
-                $sucursal_item = ShoeSucursalItem::where([
-                                ['id_shoe_detail', $item['id']],
-                                ['id_sucursal', $id_sucursal]
-                                ])->first();
-                $sucursal_item->stock -= $item['qty'];
-                $sucursal_item->save();
-                Log::info(self::LOG_LABEL." Sucursal stock for item (id: {$item['id']}) updated");
+                OrderItem::createItem($order->order_id, $item);
                 
-                $shoe_detail = ShoeDetail::where('id', $item['id'])->first();
-                $shoe_detail->stock -= $item['qty'];
-                $shoe_detail->save();
+                Log::info(self::LOG_LABEL." New order item (id: {$item['id']}) created");
+                ShoeSucursalItem::updateItem($item['id'], $id_sucursal, $item['qty']*-1);
+
+            }
+
+            //ORDER ITEMS CHANGES
+            foreach ($data['itemsForChange'] as $item) {
+                Log::info(self::LOG_LABEL." Creating new order item (id: {$item['id']})");
+                OrderItem::createItem($order->order_id, $item, 'IN');
+                
+                Log::info(self::LOG_LABEL." New order item (id: {$item['id']}) created");
+                ShoeSucursalItem::updateItem($item['id'], $id_sucursal, $item['qty']);
+
             }
 
             //PAYMENT METHODS
@@ -239,21 +221,25 @@ class OrderController extends Controller
                 Log::info(self::LOG_LABEL." New payment for order (id: {$order->order_id}) created");
             }
 
-            //Create Sucursal order
-            $id_cash = CashRegister::where('id_sucursal', $id_sucursal)
-                            ->whereDate('date', date('Y-m-d'))
-                            ->value('id');
-            $id_turn = CashRegisterTurn::where([
-                                    ['id_cash_register', $id_cash],
-                                    ['status', 0]
-                        ])->value('id');
-
-            $type_order = new OrderSucursal();
-            $type_order->id = $order->order_id;
-            $type_order->id_sucursal = $id_sucursal;
-            $type_order->id_seller = $data['seller'];
-            $type_order->id_cashier = $data['cashier'];
-            $type_order->id_turn = $id_turn;
+            switch ($orderType) {
+                case 'App\OrderSucursal': 
+                    $type_order = new OrderSucursal();
+                    $type_order->id = $order->order_id;
+                    $type_order->id_sucursal = $id_sucursal;
+                    $type_order->id_seller = $data['seller'];
+                    $type_order->id_cashier = $data['cashier'];
+                    $type_order->id_turn = CashRegister::get_open_turn_by_sucursal_id($id_sucursal)->id;
+                    break;
+                case 'App\OrderChange':
+                    $type_order = new OrderChange();
+                    $type_order->id = $order->order_id;
+                    $type_order->id_sucursal = $id_sucursal;
+                    $type_order->id_seller = $data['seller'];
+                    $type_order->id_cashier = $data['cashier'];
+                    $type_order->id_turn = CashRegister::get_open_turn_by_sucursal_id($id_sucursal)->id;
+                    break;
+            }
+            
             $type_order->save();
 
         

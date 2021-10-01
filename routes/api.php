@@ -16,7 +16,7 @@ Route::post('/tiendanube/order/fullfilled', 'TiendaNubeController@order_fulfille
 Route::post('/tiendanube/order/cancelled', 'TiendaNubeController@order_cancelled');
 Route::post('/tiendanube/products/update', 'TiendaNubeController@update_stock_tiendanube');
 Route::post('/tiendanube/products/map', 'TiendaNubeController@map_tiendanube_products');
-Route::post('/tiendanube/borrar', 'TiendaNubeController@borrar');
+Route::post('/tiendanube/products/create', 'TiendaNubeController@borrar');
 
 Route::middleware('auth:api')->post('/pdf/generate','PdfController@generatePdf');
 
@@ -76,6 +76,7 @@ Route::middleware('auth:api')->get('/stock/categories', 'StockController@get_cat
 Route::middleware('auth:api')->get('/stock/numbers', 'StockController@get_numbers');
 Route::middleware('auth:api')->get('/stock/article/items', 'StockController@get_article_items');
 Route::middleware('auth:api')->get('/stock/articles', 'StockController@get_articles');
+Route::middleware('auth:api')->get('/stock/articles/find', 'StockController@find_articles');
 Route::middleware('auth:api')->get('/stock/articles/{id}', 'StockController@get_articles_id');
 Route::middleware('auth:api')->get('/stock/single_detail_item', 'StockController@get_single_detail_item');
 Route::middleware('auth:api')->get('/stock/detail_item', 'StockController@get_detail_item');
@@ -107,4 +108,5 @@ Route::middleware('auth:api')->post('/stock/movements', 'StockMovementController
 //reset
 Route::middleware('auth:api')->put('/stock/reset', 'StockResetController@update_stock');
 Route::middleware('auth:api')->post('/stock/reset/all', 'StockResetController@reset_all_stock');
-
+Route::middleware('auth:api')->post('/creditNote', 'CreditNoteController@createCreditNote');
+Route::middleware('auth:api')->post('/creditNote/createWithoutOrder', 'CreditNoteController@createWithoutOrder');

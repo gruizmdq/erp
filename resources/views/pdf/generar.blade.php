@@ -65,7 +65,7 @@
                     <div class="text">COLOR:</div>
                     <div class="value">{{ $color }}</div>
                 </td>
-            </tr>            
+            </tr>           
         </table>
     </div>
 </div>
@@ -79,7 +79,13 @@
                 </td>
                 <td><barcode code="{{ $barcode }}" type="EAN13" size="0.8" class="barcode" text="0" /></td>
             </tr>
+            <tr>
+                <td>
+                    <div class="text">{{ now()->month }}/{{ now()->year }}</div>
+                </td>
+            </tr>  
         </table>
+
     </div>
 </body>
 </html>

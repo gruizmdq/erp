@@ -13,82 +13,34 @@ class ShoeBrandsTableSeeder extends Seeder
     {   
 
         $brands = [
-            "Activita",
-            "Agus",
-            "Ale",
             "Angies",
             "Beira rio",
-            "Caribeña",
-            "Carpincho",
-            "Chiczone",
-            "Citadina",
-            "Cocoa kids",
             "Comoditas",
-            "Cordones",
-            "Crislor",
-            "Diana",
-            "Disney",
-            "Dox",
-            "Dreamer",
-            "Federica",
-            "Flywing",
             "Footy",
-            "Goosy",
-            "Gowell",
-            "Guapitas",
-            "Gummi",
-            "Hard top",
-            "Havaiana",
             "Hey day",
-            "Ipanema",
             "Jaguar",
-            "Jamaiquinas",
-            "Junior",
-            "Keek",
-            "Key west",
-            "Korek",
-            "Kyrios",
-            "Lady stork",
             "Le utopik",
             "Lualma",
-            "Lualmi",
-            "Marcel",
-            "Maskotas",
-            "Massimo chiesa",
-            "Mistral",
             "Modare",
-            "Moleca",
             "Molekinha",
             "Molekinho",
-            "Movida kids",
-            "Namoro",
-            "Native",
-            "Neo",
-            "New tilers",
-            "Oxigeno",
-            "Pampero",
-            "Piavitelli",
-            "Pira",
+            "Popys",
             "Rave",
-            "Rinar",
-            "Savage",
-            "Sea walk",
-            "Selene",
-            "Shadow",
             "Soft",
-            "Store",
-            "Syndicate",
+            "Torshoes",
             "Vaner",
-            "Varent",
-            "Viamarte",
+            "Vanner",
             "Vizzano",
-            "Winpie",
-            "Zapatino",
+            "Vouster",
         ];
         foreach($brands as $brand) {
-            $new = new ShoeBrand();
-            $new->name = $brand;
-            $new->save();
+            $old = ShoeBrand::where('name', $brand)->first();
+            if (!$old){
+                $new = new ShoeBrand();
+                $new->name = $brand;
+                $new->save();
+                echo $brand."\n";
+            }
         }
     }
 }

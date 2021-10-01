@@ -79,6 +79,8 @@
           </ul>
         </div>
         
+        <a href="/creditNote" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
+          <i class="fas fa-table mr-3"></i>Notas de Crédito</a>
         <a href="/order" class="list-group-item list-group-item-action waves-effect" tabindex="-1">
           <i class="fas fa-table mr-3"></i>Ventas</a>
         <a href="#" class="list-group-item list-group-item-action waves-effect" tabindex="-1">

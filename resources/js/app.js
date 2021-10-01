@@ -9,6 +9,7 @@ require('./bootstrap');
 import VueMaterial from 'vue-material'
 import 'vue-material/dist/vue-material.min.css'
 import 'vue-material/dist/theme/default.css'
+import moment from 'moment';
 
 window.Vue = require('vue')
 /**
@@ -21,6 +22,11 @@ window.Vue = require('vue')
 
 // const files = require.context('./', true, /\.vue$/i)
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
+Vue.filter('formatDate', function(value) {
+    if (value) {
+        return moment(String(value)).format('dddd DD-MM-YYYY')
+    }
+});
 
 Vue.use(VueMaterial)
 
@@ -42,6 +48,7 @@ Vue.component('stock-reset', require('./components/stock/stock_reset.vue').defau
 // Utils
 Vue.component('sucursal-selector', require('./components/utils/sucursal_selector.vue').default);
 Vue.component('user-selector', require('./components/utils/user_selector.vue').default);
+Vue.component('shoe-searcher', require('./components/utils/shoe_searcher.vue').default);
 
 Vue.component('order-list', require('./components/order/order_list.vue').default);
 Vue.component('order-detail', require('./components/order/order_detail.vue').default);
@@ -52,6 +59,7 @@ Vue.component('payment-methods', require('./components/order/payment_methods.vue
 Vue.component('payment-method-selector', require('./components/order/payment_method_selector.vue').default);
 Vue.component('new-item-description', require('./components/order/new_item_description.vue').default);
 
+Vue.component('credit-note-main', require('./components/creditNote/creditNoteMain.vue').default);
 Vue.component('cash', require('./components/cashRegister/cash.vue').default);
 Vue.component('marketplace-new-order', require('./components/marketplace/new_order.vue').default);
 Vue.component('marketplace-orders', require('./components/marketplace/orders.vue').default);

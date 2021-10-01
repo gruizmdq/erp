@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../../../../../var/www/html"
+		},
+		{
+			"path": "../../../sintramed/wp-content/plugins/woo-oca"
+		},
+		{
+			"path": "../../../../../workspace/orglass-old"
+		}
+	]
+}

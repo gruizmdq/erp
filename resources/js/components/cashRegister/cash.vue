@@ -1,12 +1,13 @@
 <template>
     <div>
         <div v-if="!cashRegister" class="card p-3 text-center">
-            <h3>No se abrió nigún turno hoy.</h3>
+            <h3>La caja no se abrió hoy.</h3>
             <button @click="newCashRegister" style="margin: auto; max-width: 200px" type="button" class="btn btn-sm btn-primary">Abrir Caja</button>
         </div>
         <div v-if="cashRegister && !turn" class="card p-3 text-center">
             <h3>No hay ningún turno abierto.</h3>
-            <button @click="newTurn" style="margin: auto; max-width: 200px" type="button" class="btn btn-sm btn-primary">Abrir Turno</button>
+            <button @click="newTurn" style="margin: auto; max-width: 200px" type="button" class="btn btn-sm btn-outline-primary">Abrir Turno</button>
+            <button type="button" class="btn btn-sm btn-primary" @click="getTotalTurnCash(closeDay = true)">Cerrar Día</button>
         </div>
         <div v-if="cashRegister && turn">
             <div class="card mb-4 wow fadeIn">
@@ -14,6 +15,7 @@
                     <h4 class="mb-2 mb-sm-0 pt-1">
                         <a>Sucursal</a>
                         <span v-if="sucursal">/ {{ sucursal.name }}</span>
+                        <span v-if="cashRegister">/ {{ cashRegister.date | formatDate }}</span>
                     </h4>
                 </div>
             </div>
@@ -112,6 +114,12 @@ export default {
             CARD: 2, 
             CUENTA_CORRIENTE: 3, 
 
+            OUTCOMES: 0,
+            INCOMES: 1,
+
+            STATUS_CLOSED: 1,
+            STATUS_OPEN: 0,
+
             sucursal: null,
             cashRegister: null,
             turn: null,
@@ -147,7 +155,7 @@ export default {
         totalIncomes() {
             var total = 0
             this.totalTurnMovements.forEach(item => {
-                if (item.type == 1)
+                if (item.type == this.INCOMES)
                     total = item.total
             })
             return total
@@ -155,7 +163,7 @@ export default {
         totalOutcomes() {
             var total = 0
             this.totalTurnMovements.forEach(item => {
-                if (item.type == 0)
+                if (item.type == this.OUTCOMES)
                     total = item.total
             })
             return total
@@ -168,17 +176,19 @@ export default {
         getData() {
             axios.get('/api/cash/cash_register').then(response => {
                 this.sucursal = response.data.sucursal
-                if (response.data.cash_register)
+                if (response.data.cash_register) {
                     this.cashRegister = response.data.cash_register;
-                if (response.data.turn)
-                    this.turn = response.data.turn
+                    if (this.cashRegister && this.cashRegister.turns[0].status == this.STATUS_OPEN)
+                        this.turn = this.cashRegister.turns[0]
+                }
             });
         },
         newCashRegister() {
             axios.post('/api/cash/cash_register').then(response => {
                 if (response.data.statusCode == 200) {
                     this.cashRegister = response.data.cash_register;
-                    this.turn = response.data.turn
+                    if (this.cashRegister && this.cashRegister.turns[0].status == this.STATUS_OPEN)
+                        this.turn = this.cashRegister.turns[0]
                 }
                 this.showAlert = true
                 this.alertTitle = response.data.status
@@ -213,9 +223,10 @@ export default {
             this.newMovementItem.type = $type
         },
         getTotalTurnCash(closeTurn) {
-            axios.get('/api/cash/turn/cash').then(response => {
-                this.totalTurnCash = response.data.payments ? parseFloat(response.data.payments) : 0
-                this.totalTurnMovements = response.data.movements
+            axios.get('/api/cash/turn/cash', { params: { id_turn: this.turn.id }}).then(response => {
+                this.turn = response.data.turn;
+                this.totalTurnCash = this.getSales(this.EFECTIVO);
+                this.totalTurnMovements = response.data.turn.movements;
                 this.showCloseTurnDialog = true
             });
         },
@@ -242,10 +253,14 @@ export default {
             }); 
         },
         getSales(type) {
-            if (this.turn && this.turn.payments && this.turn.payments[type]) {
-                return this.turn.payments[type]
+            var total = 0;
+            if (this.turn && this.turn.payments) {
+                this.turn.payments.forEach(payment => {
+                    if (payment.id_payment_method == type)
+                        total = payment.total;
+                })
             }
-            return 0
+            return total;
         },
         setTurnCorrection() {
             this.turnCorrection = - (this.totalTurnCash + this.totalIncomes - this.totalOutcomes - this.actualCash + this.turn.start_cash) 

@@ -28,6 +28,7 @@
         "vuex": "^3.0.1"
     },
     "dependencies": {
+        "moment": "^2.29.1",
         "vue-material": "^1.0.0-beta-14",
         "vue-select": "^3.10.3",
         "vuejs-noty": "^0.1.3"

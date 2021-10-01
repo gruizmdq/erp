@@ -15,10 +15,10 @@
 
                 <div class="form-row mb-4">
                     <div class="col-2">
-                        <input type="number" class="z-depth-1 form-control" v-model="numberFrom" placeholder="Desde" min='1' @change="getDetailItems">
+                        <input @keydown.enter="moveTo($event, 'numberTo')" type="number" class="z-depth-1 form-control" v-model="numberFrom" placeholder="Desde" min='1' @change="getDetailItems">
                     </div>
                     <div class="col-2">
-                        <input type="number" class="z-depth-1 form-control" v-model="numberTo" placeholder="Hasta" min='1' @change="getDetailItems">
+                        <input @keydown.enter="moveTo($event, 'qty')" ref="numberTo" type="number" class="z-depth-1 form-control" v-model="numberTo" placeholder="Hasta" min='1' @change="getDetailItems">
                     </div>
                 </div>
 
@@ -39,30 +39,30 @@
                         <tr>
                             <td scope="col"> - </td>
                             <td scope="col"> - </td>
-                            <td scope="col"><input min="0" type="number" v-model.number="new_stock_all" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
-                            <td scope="col"><input v-model.number="new_buy_price_all" type="number" step="0.01" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
-                            <td scope="col"><input v-model.number="new_sell_price_all" type="number" step="0.01" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
+                            <td scope="col"><input @keydown.down="moveDown(-1, 'qty')" @keydown.right="$refs.buy_price.focus()" ref="qty" min="0" type="number" v-model.number="new_stock_all" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
+                            <td scope="col"><input @keydown.down="moveDown(-1, 'buy_price')" @keydown.left="$refs.qty.focus()" @keydown.right="$refs.sell_price.focus()" ref="buy_price" v-model.number="new_buy_price_all" type="number" step="0.01" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
+                            <td scope="col"><input @keydown.down="moveDown(-1, 'sell_price')" @keydown.left="$refs.buy_price.focus()" @keydown.right="$refs.tiendanube.focus()" ref="sell_price" v-model.number="new_sell_price_all" type="number" step="0.01" class="m-auto text-center form-control form-control-sm" style="max-width: 100px;"></td>
                             <td scope="col"> - </td>
                             <td scope="col">
                                 <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input" v-model="tiendanube_all" id="tiendanube_all">
+                                    <input @keydown.down="moveDown(-1, 'tiendanube')" @keydown.left="$refs.sell_price.focus()" @keydown.right="$refs.marketplace.focus()" ref="tiendanube" type="checkbox" class="custom-control-input" v-model="tiendanube_all" id="tiendanube_all">
                                     <label class="custom-control-label" for="tiendanube_all"></label>
                                 </div>
                             </td>
                             <td scope="col">
                                 <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input" v-model="marketplace_all"  id="marketplace_all">
+                                    <input @keydown.down="moveDown(-1, 'marketplace')" @keydown.left="$refs.tiendanube.focus()" ref="marketplace" type="checkbox" class="custom-control-input" v-model="marketplace_all"  id="marketplace_all">
                                     <label class="custom-control-label" for="marketplace_all"></label>
                                 </div>
                             </td>
                         </tr>
-                        <stock-item-row :stock="i.stock" :marketplace.sync="marketplace_all" :tiendanube.sync="tiendanube_all" :new_sell_price.sync="new_sell_price_all" :new_buy_price.sync="new_buy_price_all" :new_stock.sync="new_stock_all" v-for="i in detailItems" :key="i.number" :item="i"> </stock-item-row>
+                        <stock-item-row ref="details" @moveUp="moveUp" @moveDown="moveDown" :stock="i.stock" :marketplace.sync="marketplace_all" :tiendanube.sync="tiendanube_all" :new_sell_price.sync="new_sell_price_all" :new_buy_price.sync="new_buy_price_all" :new_stock.sync="new_stock_all" v-for="(i, index) in detailItems" :key="i.number" :item="i" :index="index"> </stock-item-row>
                     </tbody>
                 </table>
 
                 <div class="text-center" v-if="color && brand && article && detailItems">
-                    <a class="btn btn-outline-primary my-4" @click="reset">Reset</a>
-                    <a class="btn btn-primary my-4" @click="activeConfirmDialog = true">Agregar</a>
+                    <button type="button" @keydown.up="$refs.details[detailItems.length-1].$refs.buy_price.focus()" @keydown.right="$refs.submitButton.focus()" ref="resetButton" class="btn btn-outline-primary my-4" @click="reset">Reset</button>
+                    <button type="button" @keydown.up="$refs.details[detailItems.length-1].$refs.sell_price.focus()" @keydown.left="$refs.resetButton.focus()" ref="submitButton" class="btn btn-primary my-4 focus" @click="activeConfirmDialog = true">Agregar</button>
                 </div>
                 </form>
                 <md-dialog-confirm
@@ -109,6 +109,26 @@
             }
         },
 		methods: {
+            moveTo(event, to) {
+                event.preventDefault()
+                this.$refs[to].focus()
+            },
+            moveDown(index, ref) {
+                if (index < this.detailItems.length - 1) {
+                    this.$refs.details[index+1].$refs[ref].focus()
+                }
+                else {
+                    this.$refs.submitButton.focus()
+                }
+            },
+            moveUp(index, ref) {
+                if (index > 0) {
+                    this.$refs.details[index-1].$refs[ref].focus()
+                }
+                if (index == 0) {
+                    this.$refs.qty.focus()
+                }
+            },
             updatebrand: function(brand){
                 this.brand = brand
                 this.article = null
@@ -186,3 +206,9 @@
 		}
 	}
 </script>
+<style scoped>
+    .focus:focus{
+        background:red!important;
+        color:white!important
+    }
+</style>

@@ -21,9 +21,9 @@ use Log;
 
 class CashRegisterController extends Controller
 {
-    const LOG_LABEL = '[CASH REGISTER API]';
-    const STATUS_ERROR_TITLE = "Ups. Algo salió mal";
-    const STATUS_SUCCESS_TITLE = "¡Bien papá!";
+    private const LOG_LABEL = '[CASH REGISTER API]';
+    private const STATUS_ERROR_TITLE = "Ups. Algo salió mal";
+    private const STATUS_SUCCESS_TITLE = "¡Bien papá!";
 
     public function get_cash_register(Request $request) {
         $request->user()->authorizeRoles(['admin', 'cashier']);
@@ -31,41 +31,30 @@ class CashRegisterController extends Controller
         //TODO Error handling
         $sucursal = Sucursal::findOrFail($this->get_cookie('id_sucursal'));
 
+        //By Id
         if ($request->input("id", null)) {
             $cash_register = CashRegister::find($request->input('id'));
-            $turn = CashRegisterTurn::where([
-                                            ['id_cash_register', $cash_register->id],
-                                            ['status', 0]
-                                            ])->first();
+            $cash_register->turns;
         }
         else {
             $cash_register = CashRegister::where('id_sucursal', $sucursal->id)
-                                        ->whereDate('date', date('Y-m-d'))
+                                        ->where('status', CashRegister::STATUS_OPEN)
                                         ->first();
             if ($cash_register) {
-                $turn = CashRegisterTurn::where([
-                                                ['id_cash_register', $cash_register->id],
-                                                ['status', 0]
-                                                ])->first();
-                if ($turn != null){              
-                    $turn->movements;
-                    $records = OrderSucursal::join('order_payments', 'order_sucursals.id', '=', 'order_payments.id_order')
-                                                ->where('order_sucursals.id_turn', $turn->id)
-                                                ->select('order_payments.id_payment_method', DB::raw('sum(order_payments.total) as total'))
-                                                ->groupBy('order_payments.id_payment_method')
-                                                ->get();
-                    $payments = [];
+                $turns = $cash_register->turns;
+                
+                if (count($turns)) {     
+                    //esta ordenado por status desc, por eso siempre el 0         
+                    $turn = $turns[0];
 
-                    foreach ($records as $r)
-                        $payments[$r->id_payment_method] = $r->total;
-                        
-                    $turn->payments = $payments;
+                    if ($turn->status == CashRegister::STATUS_OPEN) {
+                        $turn->movements;
+                        $turn->payments = $turn->getPayments();
+                    }
                 }
             }
-            else 
-                $turn = null;
         }
-        return response()->json(["sucursal" => $sucursal, "cash_register" => $cash_register, "turn" => $turn]);
+        return response()->json(["sucursal" => $sucursal, "cash_register" => $cash_register]);
     }
 
     public function new_cash_register(Request $request) {
@@ -108,25 +97,15 @@ class CashRegisterController extends Controller
     public function get_total_turn_cash(Request $request) {
         $request->user()->authorizeRoles(['admin', 'cashier']);
 
-        $id_cash = CashRegister::where('id_sucursal', $this->get_cookie('id_sucursal'))
-                            ->whereDate('date', date('Y-m-d'))
-                            ->value('id');
         $turn = CashRegisterTurn::where([
-                                ['id_cash_register', $id_cash],
-                                ['status', 0]
+                                ['id', $request->input('id_turn')],
+                                ['status', CashRegister::STATUS_OPEN]
                                 ])->first();
 
-        $movements = CashRegisterMovement::where('id_turn', $turn->id)
-                                        ->select('type', DB::raw('sum(amount) as total'))
-                                        ->groupBy('type')
-                                        ->get();
+        $turn->movements;
+        $turn->payments = $turn->getPayments();
         
-        $payments = OrderSucursal::join('order_payments', 'order_sucursals.id', '=', 'order_payments.id_order')
-                                    ->select(DB::raw('sum(order_payments.total) as total'))
-                                    ->where([['order_sucursals.id_turn', $turn->id], ['order_payments.id_payment_method', 1]])
-                                    ->value('total');
-        
-        return response()->json(["turn" => $turn, "payments" => $payments, 'movements' => $movements]);
+        return response()->json(["turn" => $turn]);
     }
 
     public function new_movement(Request $request) {
@@ -184,6 +163,8 @@ class CashRegisterController extends Controller
                 $start_cash = 0;
             $new_turn->start_cash = $start_cash;
             $new_turn->save();
+            $new_turn->payments = [];
+            $new_turn->movements = [];
         }
         catch (Exception $e) {
             Log::error(self::LOG_LABEL." Error when create new turn");
@@ -207,10 +188,10 @@ class CashRegisterController extends Controller
         $statusCode = 200;
 
         try {
-            $turn = CashRegisterTurn::where('status', 0)->findOrFail($request->input('id_turn'));
+            $turn = CashRegisterTurn::where('status', CashRegister::STATUS_OPEN)->findOrFail($request->input('id_turn'));
             $turn->end_cash = $request->input('end_cash');
             $turn->correction = $request->input('correction');
-            $turn->status = 1;
+            $turn->status = CashRegister::STATUS_CLOSED;
             $turn->save();
             Log::info(self::LOG_LABEL." Success. Update proccess finished");
         }
@@ -244,11 +225,11 @@ class CashRegisterController extends Controller
             Log::info(self::LOG_LABEL." closing turn...");
             DB::beginTransaction();
 
-            $turn = CashRegisterTurn::where('status', 0)->findOrFail($request->input('id_turn'));
+            $turn = CashRegisterTurn::where('status', CashRegister::STATUS_OPEN)->findOrFail($request->input('id_turn'));
             $turn->end_cash = $request->input('end_cash');
             $turn->correction = $request->input('correction');
             $turn->gua = $request->input('guardar');
-            $turn->status = 1;
+            $turn->status = CashRegister::STATUS_CLOSED;
             $turn->save();
 
             Log::info(self::LOG_LABEL." turn closed success");
@@ -257,7 +238,7 @@ class CashRegisterController extends Controller
 
             $cash_register = CashRegister::findOrFail($turn->id_cash_register);
             $cash_register->z = $request->input('z');
-            $cash_register->status = 1;
+            $cash_register->status =  CashRegister::STATUS_CLOSED;
             $cash_register->save(); 
 
             DB::commit();
